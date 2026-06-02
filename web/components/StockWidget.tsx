@@ -1,4 +1,5 @@
-import { type StockIndex, type Locale, t } from '@/lib/i18n'
+import { type StockIndex } from '@/lib/api'
+import { type Locale, t } from '@/lib/i18n'
 
 interface StockWidgetProps {
   stocks: StockIndex[]

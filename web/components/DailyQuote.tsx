@@ -1,4 +1,5 @@
-import { type Quote, type Locale, t } from '@/lib/i18n'
+import { type Quote } from '@/lib/api'
+import { type Locale, t } from '@/lib/i18n'
 
 interface DailyQuoteProps {
   quote: Quote

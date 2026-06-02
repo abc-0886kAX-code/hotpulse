@@ -1,4 +1,5 @@
-import { type TrendingItem, type Locale, platformNames, t } from '@/lib/i18n'
+import { type TrendingItem } from '@/lib/api'
+import { type Locale, platformNames, t } from '@/lib/i18n'
 
 interface FeedCardProps {
   item: TrendingItem
