@@ -1,0 +1,12 @@
+{
+  "name": "hotpulse",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:web": "cd web && npm run dev",
+    "dev:server": "cd server && uvicorn main:app --reload",
+    "dev": "docker-compose up -d && cd web && npm run dev",
+    "build": "cd web && npm run build",
+    "lint": "cd web && npm run lint"
+  }
+}

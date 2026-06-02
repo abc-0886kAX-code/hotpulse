@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hotpulse-db
+    environment:
+      POSTGRES_USER: hotpulse
+      POSTGRES_PASSWORD: hotpulse
+      POSTGRES_DB: hotpulse
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: hotpulse-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: hotpulse-api
+    command: uvicorn server.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - '8000:8000'
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./server:/app/server
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: hotpulse-celery
+    command: celery -A server.tasks.celery_app worker --loglevel=info --beat
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./server:/app/server
+
+volumes:
+  postgres_data:
+  redis_data:
