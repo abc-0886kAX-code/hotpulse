@@ -2,7 +2,10 @@ import anthropic
 
 from server.config import settings
 
-client = anthropic.AsyncClient(api_key=settings.anthropic_api_key)
+client = anthropic.AsyncClient(
+    api_key=settings.anthropic_api_key,
+    base_url=settings.anthropic_base_url,
+)
 
 SYSTEM_PROMPT = """你是一个新闻分析助手。对给定的新闻条目，用JSON格式返回以下字段：
 - summary_zh: 中文摘要（不超过100字）
@@ -25,7 +28,7 @@ async def process_trending_item(item: dict) -> dict:
     try:
         text = f"标题: {item.get('title', '')}\n内容: {item.get('original_text', '')}"
         response = await client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=settings.ai_model,
             max_tokens=300,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": text}],
