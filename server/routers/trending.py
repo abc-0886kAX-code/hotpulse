@@ -1,60 +1,41 @@
+import asyncio
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Query
 
-from server.database import get_db
-from server.models.trending import TrendingItem
+from server.services.supabase_client import supabase
 
 router = APIRouter(prefix="/api/trending", tags=["trending"])
 
 
 @router.get("")
 async def get_trending_list(
-    category: Optional[str] = Query(None, description="按分类过滤"),
+    category: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
 ):
-    query = select(TrendingItem).order_by(TrendingItem.heat_score.desc())
+    query = supabase.table("trending_items").select("*", count="exact")
+
     if category:
-        query = query.where(TrendingItem.category == category)
+        query = query.eq("category", category)
+
     offset = (page - 1) * page_size
-    query = query.offset(offset).limit(page_size)
 
-    from sqlalchemy import func
-    count_query = select(func.count()).select_from(TrendingItem)
-    if category:
-        count_query = count_query.where(TrendingItem.category == category)
+    def _fetch():
+        resp = query.order("heat_score", desc=True).range(offset, offset + page_size - 1).execute()
+        return resp.data, resp.count
 
-    total_result = await db.execute(count_query)
-    total = total_result.scalar() or 0
-
-    result = await db.execute(query)
-    items = result.scalars().all()
-
-    return {
-        "items": items,
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-    }
+    items, total = await asyncio.to_thread(_fetch)
+    return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 
 @router.get("/{item_id}")
-async def get_trending_detail(
-    item_id: str,
-    db: AsyncSession = Depends(get_db),
-):
-    import uuid
-    try:
-        uid = uuid.UUID(item_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="无效的ID格式")
+async def get_trending_detail(item_id: str):
+    def _fetch():
+        return supabase.table("trending_items").select("*").eq("id", item_id).execute().data
 
-    result = await db.execute(select(TrendingItem).where(TrendingItem.id == uid))
-    item = result.scalar_one_or_none()
-    if not item:
+    items = await asyncio.to_thread(_fetch)
+    if not items:
+        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="未找到该热门话题")
-    return item
+    return items[0]

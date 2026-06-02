@@ -1,23 +1,18 @@
+import asyncio
 import logging
-import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import delete
 
-from server.database import init_db, AsyncSessionLocal
 from server.routers.trending import router as trending_router
 from server.routers.quotes import router as quotes_router
 from server.routers.stocks import router as stocks_router
-from server.services.quote_service import seed_quotes
+from server.services.supabase_client import supabase, seed_quotes
 from server.services.scrapers import fetch_all_trending
 from server.services.ai_processor import process_trending_item
 from server.services.stock_fetcher import fetch_stock_indices
-from server.models.trending import TrendingItem
-from server.models.stock import StockIndex
-from server.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,15 +20,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("初始化数据库...")
-    await init_db()
-
-    async with AsyncSessionLocal() as db:
-        count = await seed_quotes(db)
-        logger.info(f"名言种子数据: {count} 条")
-
+    logger.info("初始化 Supabase...")
+    count = seed_quotes()
+    logger.info(f"名言种子数据: {count} 条")
     yield
-
     logger.info("应用关闭")
 
 
@@ -72,25 +62,25 @@ async def cron_fetch_trending():
         result = await process_trending_item(item)
         processed.append(result)
 
-    async with AsyncSessionLocal() as db:
-        await db.execute(delete(TrendingItem))
-        for item in processed:
-            db.add(TrendingItem(
-                id=uuid.uuid4(),
-                platform=item.get("platform", ""),
-                source_url=item.get("source_url", ""),
-                title=item.get("title", ""),
-                original_text=item.get("original_text", ""),
-                ai_summary_zh=item.get("ai_summary_zh", ""),
-                ai_summary_en=item.get("ai_summary_en", ""),
-                category=item.get("category", "other"),
-                sentiment=item.get("sentiment", "neutral"),
-                heat_score=item.get("heat_score", 0),
-                published_at=item.get("published_at", datetime.now(timezone.utc)),
-                fetched_at=datetime.now(timezone.utc),
-            ))
-        await db.commit()
+    def _save():
+        supabase.table("trending_items").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+        rows = [{
+            "platform": item.get("platform", ""),
+            "source_url": item.get("source_url", ""),
+            "title": item.get("title", ""),
+            "original_text": item.get("original_text", ""),
+            "ai_summary_zh": item.get("ai_summary_zh", ""),
+            "ai_summary_en": item.get("ai_summary_en", ""),
+            "category": item.get("category", "other"),
+            "sentiment": item.get("sentiment", "neutral"),
+            "heat_score": item.get("heat_score", 0),
+            "published_at": item.get("published_at", datetime.now(timezone.utc).isoformat()),
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+        } for item in processed]
+        if rows:
+            supabase.table("trending_items").insert(rows).execute()
 
+    await asyncio.to_thread(_save)
     logger.info(f"保存 {len(processed)} 条热门话题")
     return {"status": "ok", "count": len(processed)}
 
@@ -100,18 +90,18 @@ async def cron_fetch_stocks():
     indices = await fetch_stock_indices()
     logger.info(f"获取到 {len(indices)} 个股票指数")
 
-    async with AsyncSessionLocal() as db:
-        await db.execute(delete(StockIndex))
-        for item in indices:
-            db.add(StockIndex(
-                id=uuid.uuid4(),
-                symbol=item.get("symbol", ""),
-                name=item.get("name", ""),
-                price=item.get("price", 0.0),
-                change_pct=item.get("change_pct", 0.0),
-                snapshot_time=item.get("snapshot_time"),
-            ))
-        await db.commit()
+    def _save():
+        supabase.table("stock_indices").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+        rows = [{
+            "symbol": item.get("symbol", ""),
+            "name": item.get("name", ""),
+            "price": item.get("price", 0.0),
+            "change_pct": item.get("change_pct", 0.0),
+            "snapshot_time": item.get("snapshot_time", datetime.now(timezone.utc).isoformat()),
+        } for item in indices]
+        if rows:
+            supabase.table("stock_indices").insert(rows).execute()
 
+    await asyncio.to_thread(_save)
     logger.info(f"保存 {len(indices)} 个股票指数")
     return {"status": "ok", "count": len(indices)}

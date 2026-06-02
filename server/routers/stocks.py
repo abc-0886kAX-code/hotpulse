@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+import asyncio
 
-from server.database import get_db
-from server.models.stock import StockIndex
+from fastapi import APIRouter
+
+from server.services.supabase_client import supabase
 
 router = APIRouter(prefix="/api/stocks", tags=["stocks"])
 
 
 @router.get("")
-async def get_stocks(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(StockIndex).order_by(StockIndex.symbol))
-    items = result.scalars().all()
+async def get_stocks():
+    def _fetch():
+        return supabase.table("stock_indices").select("*").order("symbol").execute().data
+
+    items = await asyncio.to_thread(_fetch)
     return {"items": items}

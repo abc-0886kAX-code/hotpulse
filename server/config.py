@@ -2,8 +2,8 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    database_url: str = "postgresql+asyncpg://hotpulse:hotpulse@localhost:5432/hotpulse"
-    redis_url: str = "redis://localhost:6379/0"
+    supabase_url: str = ""
+    supabase_anon_key: str = ""
     anthropic_api_key: str = ""
     anthropic_base_url: str = "https://open.bigmodel.cn/api/anthropic"
     ai_model: str = "glm-4-flash"
