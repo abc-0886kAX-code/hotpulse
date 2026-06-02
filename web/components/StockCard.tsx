@@ -1,5 +1,5 @@
 import { type StockIndex } from '@/lib/api'
-import { type Locale, t } from '@/lib/i18n'
+import { type Locale } from '@/lib/i18n'
 import SparklineChart from './SparklineChart'
 
 interface StockCardProps {
@@ -20,16 +20,16 @@ export default function StockCard({ stock, history, locale }: StockCardProps) {
   const isPositive = stock.change_pct >= 0
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5 transition-all hover:border-zinc-700">
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md">
       <div className="mb-1 flex items-center justify-between">
-        <h3 className="text-sm font-medium text-zinc-300">
+        <h3 className="text-sm font-medium text-slate-500">
           {locale === 'zh' ? display.zh : display.en}
         </h3>
-        <span className={`text-xs font-medium ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+        <span className={`text-xs font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
           {isPositive ? '+' : ''}{stock.change_pct.toFixed(2)}%
         </span>
       </div>
-      <p className="mb-3 text-2xl font-bold text-zinc-100">
+      <p className="mb-3 text-3xl font-bold text-slate-900">
         {stock.price.toFixed(2)}
       </p>
       <SparklineChart data={history} positive={isPositive} />

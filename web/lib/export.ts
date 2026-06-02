@@ -1,5 +1,5 @@
 import { type Quote } from '@/lib/api'
-import { type Locale, t } from '@/lib/i18n'
+import { type Locale } from '@/lib/i18n'
 
 export function exportQuoteAsImage(quote: Quote, locale: Locale) {
   const canvas = document.createElement('canvas')
@@ -8,13 +8,13 @@ export function exportQuoteAsImage(quote: Quote, locale: Locale) {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
-  ctx.fillStyle = '#18181b'
+  ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, 800, 400)
 
-  ctx.fillStyle = '#3b82f6'
+  ctx.fillStyle = '#2563eb'
   ctx.fillRect(0, 0, 4, 400)
 
-  ctx.fillStyle = '#fafafa'
+  ctx.fillStyle = '#0f172a'
   ctx.font = 'italic 24px Inter, system-ui, sans-serif'
   const text = locale === 'zh' ? quote.text_zh : quote.text_en
   const lines = wrapText(ctx, text, 700)
@@ -23,11 +23,11 @@ export function exportQuoteAsImage(quote: Quote, locale: Locale) {
     ctx.fillText(line, 40, startY + i * 40)
   })
 
-  ctx.fillStyle = '#71717a'
+  ctx.fillStyle = '#94a3b8'
   ctx.font = '16px Inter, system-ui, sans-serif'
   ctx.fillText(`— ${quote.author}`, 40, startY + lines.length * 40 + 30)
 
-  ctx.fillStyle = '#52525b'
+  ctx.fillStyle = '#cbd5e1'
   ctx.font = '14px Inter, system-ui, sans-serif'
   ctx.fillText('HotPulse', 40, 370)
 

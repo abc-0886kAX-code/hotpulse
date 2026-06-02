@@ -6,6 +6,7 @@ export interface TrendingItem {
   source_url: string
   title: string
   original_text: string
+  content_snippet?: string
   ai_summary_zh: string
   ai_summary_en: string
   category: string
@@ -13,6 +14,12 @@ export interface TrendingItem {
   heat_score: number
   published_at: string
   fetched_at: string
+}
+
+export interface TrendingStats {
+  categoryDistribution: Record<string, number>
+  sentimentDistribution: Record<string, number>
+  topHeat: TrendingItem[]
 }
 
 export interface Quote {
@@ -40,6 +47,12 @@ export interface StockHistoryPoint {
   snapshot_time: string
 }
 
+export interface MarketAnalysis {
+  content_zh: string
+  content_en: string
+  generated_at: string
+}
+
 export async function fetchTrending(params?: { category?: string; page?: number; page_size?: number }): Promise<TrendingItem[]> {
   const query = new URLSearchParams()
   if (params?.category) query.set('category', params.category)
@@ -50,9 +63,20 @@ export async function fetchTrending(params?: { category?: string; page?: number;
   return data.items ?? []
 }
 
-export async function fetchDailyQuote(): Promise<Quote> {
-  const res = await fetch(`${API_BASE}/api/quotes/daily`)
+export async function fetchTrendingStats(): Promise<TrendingStats | null> {
+  const res = await fetch(`${API_BASE}/api/trending/stats`)
+  if (!res.ok) return null
   return res.json()
+}
+
+export async function fetchDailyQuote(): Promise<Quote | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/quotes/daily`)
+    if (!res.ok) return null
+    return res.json()
+  } catch {
+    return null
+  }
 }
 
 export async function fetchStocks(): Promise<StockIndex[]> {
@@ -70,4 +94,15 @@ export async function fetchStockHistory(symbol: string, days: number = 30): Prom
   const res = await fetch(`${API_BASE}/api/stocks/history/${encodeURIComponent(symbol)}?days=${days}`)
   const data = await res.json()
   return data.data ?? []
+}
+
+export async function fetchStockAnalysis(): Promise<MarketAnalysis | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/stocks/analysis`)
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.item ?? null
+  } catch {
+    return null
+  }
 }

@@ -6,29 +6,31 @@ import { exportQuoteAsImage } from '@/lib/export'
 import ShareButton from './ShareButton'
 
 interface DailyQuoteProps {
-  quote: Quote
+  quote: Quote | null
   locale: Locale
 }
 
 export default function DailyQuote({ quote, locale }: DailyQuoteProps) {
-  const text = locale === 'zh' ? quote.text_zh : quote.text_en
+  const text = quote ? (locale === 'zh' ? quote.text_zh : quote.text_en) : ''
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-      <p className="italic leading-relaxed text-zinc-200">
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="italic leading-relaxed text-slate-700">
         &ldquo;{text}&rdquo;
       </p>
-      <div className="mt-3 flex items-center justify-between text-sm text-zinc-500">
-        <span>— {quote.author}</span>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => exportQuoteAsImage(quote, locale)}
-            className="rounded-lg px-3 py-1 text-xs transition-colors hover:bg-zinc-800 hover:text-zinc-300"
-          >
-            {t(locale, 'quote.export')}
-          </button>
-          <ShareButton text={text} locale={locale} />
-        </div>
+      <div className="mt-3 flex items-center justify-between text-sm text-slate-400">
+        <span>— {quote?.author ?? ''}</span>
+        {quote && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => exportQuoteAsImage(quote!, locale)}
+              className="rounded-lg px-3 py-1 text-xs transition-colors hover:bg-slate-100 hover:text-slate-600"
+            >
+              {t(locale, 'quote.export')}
+            </button>
+            <ShareButton text={text} locale={locale} />
+          </div>
+        )}
       </div>
     </div>
   )

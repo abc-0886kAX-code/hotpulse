@@ -5,6 +5,7 @@ import ShareButton from './ShareButton'
 interface FeedCardProps {
   item: TrendingItem
   locale: Locale
+  aiMode?: boolean
 }
 
 function relativeTime(dateStr: string): string {
@@ -27,29 +28,34 @@ const categoryMap: Record<string, { zh: string; en: string }> = {
 }
 
 const sentimentStyles: Record<string, string> = {
-  positive: 'bg-green-500/15 text-green-400',
-  negative: 'bg-red-500/15 text-red-400',
-  neutral: 'bg-amber-500/15 text-amber-400',
+  positive: 'bg-green-50 text-green-600',
+  negative: 'bg-red-50 text-red-600',
+  neutral: 'bg-amber-50 text-amber-600',
 }
 
-export default function FeedCard({ item, locale }: FeedCardProps) {
+export default function FeedCard({ item, locale, aiMode = false }: FeedCardProps) {
   const platform = platformNames[item.platform] ?? { zh: item.platform, en: item.platform }
   const cat = categoryMap[item.category] ?? { zh: item.category, en: item.category }
   const summary = locale === 'zh' ? item.ai_summary_zh : item.ai_summary_en
+  const content = (item as TrendingItem & { content_snippet?: string }).content_snippet ?? ''
 
   return (
-    <div className="group flex min-h-[200px] flex-col rounded-xl border border-zinc-800 bg-zinc-900 p-5 transition-all hover:border-zinc-700 hover:shadow-lg hover:shadow-black/20">
+    <div className="group flex min-h-[200px] flex-col rounded-xl border border-slate-200 bg-white p-5 transition-all hover:shadow-md">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <span className="text-zinc-500">{locale === 'zh' ? platform.zh : platform.en}</span>
-          <span className="rounded-md bg-blue-500/10 px-1.5 py-0.5 text-blue-400">
-            {locale === 'zh' ? cat.zh : cat.en}
-          </span>
-          <span className={`rounded-md px-1.5 py-0.5 ${sentimentStyles[item.sentiment] ?? sentimentStyles.neutral}`}>
-            {item.sentiment === 'positive' ? t(locale, 'sentiment.positive')
-              : item.sentiment === 'negative' ? t(locale, 'sentiment.negative')
-              : t(locale, 'sentiment.neutral')}
-          </span>
+          <span className="text-slate-400">{locale === 'zh' ? platform.zh : platform.en}</span>
+          {aiMode && (
+            <>
+              <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-blue-600">
+                {locale === 'zh' ? cat.zh : cat.en}
+              </span>
+              <span className={`rounded-md px-1.5 py-0.5 ${sentimentStyles[item.sentiment] ?? sentimentStyles.neutral}`}>
+                {item.sentiment === 'positive' ? t(locale, 'sentiment.positive')
+                  : item.sentiment === 'negative' ? t(locale, 'sentiment.negative')
+                  : t(locale, 'sentiment.neutral')}
+              </span>
+            </>
+          )}
         </div>
         <ShareButton text={item.title} url={item.source_url} locale={locale} />
       </div>
@@ -58,18 +64,28 @@ export default function FeedCard({ item, locale }: FeedCardProps) {
         href={item.source_url}
         target="_blank"
         rel="noopener noreferrer"
-        className="mb-2 line-clamp-2 text-base font-semibold leading-snug text-zinc-100 transition-colors hover:text-blue-400"
+        className="mb-2 line-clamp-2 text-base font-semibold leading-snug text-slate-900 transition-colors hover:text-blue-600"
       >
         {item.title}
       </a>
 
-      <p className="mb-auto line-clamp-3 flex-1 text-sm leading-relaxed text-zinc-400">
-        {summary}
-      </p>
+      {aiMode && summary ? (
+        <p className="mb-auto line-clamp-2 flex-1 text-sm leading-relaxed text-blue-600/70">
+          AI: {summary}
+        </p>
+      ) : null}
 
-      <div className="mt-3 flex items-center gap-3 border-t border-zinc-800 pt-3 text-xs text-zinc-500">
+      {content ? (
+        <p className={`mb-auto line-clamp-3 flex-1 text-sm leading-relaxed text-slate-500 ${aiMode ? 'mt-1' : ''}`}>
+          {content}
+        </p>
+      ) : !aiMode ? null : null}
+
+      <div className="mt-3 flex items-center gap-3 border-t border-slate-100 pt-3 text-xs text-slate-400">
         <span>{t(locale, 'meta.ago').replace('{time}', relativeTime(item.published_at))}</span>
-        <span>{t(locale, 'meta.heat').replace('{score}', String(item.heat_score))}</span>
+        {aiMode && (
+          <span>{t(locale, 'meta.heat').replace('{score}', String(item.heat_score))}</span>
+        )}
       </div>
     </div>
   )

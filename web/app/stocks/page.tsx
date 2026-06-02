@@ -3,46 +3,49 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/app-context'
 import { t } from '@/lib/i18n'
-import { fetchStocks, fetchAllStockHistory } from '@/lib/api'
-import type { StockIndex, StockHistoryPoint } from '@/lib/api'
+import { fetchStocks, fetchAllStockHistory, fetchStockAnalysis } from '@/lib/api'
+import type { StockIndex, StockHistoryPoint, MarketAnalysis } from '@/lib/api'
 import StockCard from '@/components/StockCard'
+import EmptyState from '@/components/EmptyState'
+import ViewTabs from '@/components/ViewTabs'
 
-const fallbackStocks: StockIndex[] = [
-  { id: '1', symbol: '000001.SS', name: '上证指数', price: 3245.68, change_pct: 1.23, snapshot_time: new Date().toISOString() },
-  { id: '2', symbol: '^IXIC', name: '纳斯达克综合', price: 18456.78, change_pct: 0.87, snapshot_time: new Date().toISOString() },
-  { id: '3', symbol: '^HSI', name: '恒生指数', price: 18234.56, change_pct: -0.32, snapshot_time: new Date().toISOString() },
-  { id: '4', symbol: '^GSPC', name: '标普500', price: 5678.90, change_pct: 0.56, snapshot_time: new Date().toISOString() },
-]
+const fallbackStocks: StockIndex[] = []
 
 export default function StocksPage() {
   const { locale } = useApp()
+  const [viewMode, setViewMode] = useState('market')
   const [stocks, setStocks] = useState<StockIndex[]>([])
   const [history, setHistory] = useState<Record<string, StockHistoryPoint[]>>({})
+  const [days, setDays] = useState(30)
+  const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
+      setLoading(true)
       try {
-        const [stockData, historyData] = await Promise.all([
-          fetchStocks().catch(() => []),
-          fetchAllStockHistory(30).catch(() => ({})),
-        ])
-        if (stockData.length > 0) {
-          setStocks(stockData)
-        } else {
-          setStocks(fallbackStocks)
-        }
+        const stockData = await fetchStocks().catch(() => [])
+        setStocks(stockData)
+
+        const historyData = await fetchAllStockHistory(days).catch(() => ({}))
         setHistory(historyData)
       } catch {
-        setStocks(fallbackStocks)
+        setStocks([])
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [])
+  }, [days])
+
+  useEffect(() => {
+    if (viewMode === 'ai') {
+      fetchStockAnalysis().then(setAnalysis).catch(() => setAnalysis(null))
+    }
+  }, [viewMode])
 
   const handleExportCSV = () => {
+    if (stocks.length === 0) return
     const headers = ['Symbol', 'Name', 'Price', 'Change %', 'Time']
     const rows = stocks.map(s => [
       s.symbol, s.name, s.price.toFixed(2),
@@ -59,25 +62,78 @@ export default function StocksPage() {
     URL.revokeObjectURL(url)
   }
 
+  const stocksTabs = [
+    { key: 'market', label: locale === 'zh' ? '行情数据' : 'Market' },
+    { key: 'ai', label: locale === 'zh' ? 'AI 分析' : 'AI Analysis' },
+  ]
+
+  const timeRanges = [
+    { key: 7, label: '7D' },
+    { key: 30, label: '30D' },
+    { key: 90, label: '90D' },
+  ]
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-zinc-100">
-          {t(locale, 'stock.overview')}
-        </h2>
-        <button
-          onClick={handleExportCSV}
-          className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-1.5 text-sm text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-200"
-        >
-          {t(locale, 'export.csv')}
-        </button>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-bold text-slate-900">
+            {t(locale, 'stock.overview')}
+          </h2>
+          <ViewTabs tabs={stocksTabs} active={viewMode} onChange={setViewMode} />
+        </div>
+        <div className="flex items-center gap-3">
+          {viewMode === 'market' && (
+            <>
+              <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
+                {timeRanges.map((tr) => (
+                  <button
+                    key={tr.key}
+                    onClick={() => setDays(tr.key)}
+                    className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+                      days === tr.key
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    {tr.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={handleExportCSV}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-1.5 text-sm text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700"
+              >
+                {t(locale, 'export.csv')}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20 text-zinc-500">
+        <div className="flex items-center justify-center py-20 text-slate-400">
           {locale === 'zh' ? '加载中...' : 'Loading...'}
         </div>
-      ) : (
+      ) : viewMode === 'ai' ? (
+        <div className="mx-auto max-w-3xl">
+          {analysis ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="mb-2 text-sm font-medium text-blue-600">
+                {locale === 'zh' ? 'AI 市场分析' : 'AI Market Analysis'}
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">
+                {new Date(analysis.generated_at).toLocaleString()}
+              </p>
+              <div className="prose prose-slate max-w-none text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">
+                {locale === 'zh' ? analysis.content_zh : analysis.content_en}
+              </div>
+            </div>
+          ) : (
+            <EmptyState locale={locale} message={locale === 'zh' ? '暂无 AI 分析报告' : 'No AI analysis available'} />
+          )}
+        </div>
+      ) : stocks.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stocks.map((stock) => (
             <StockCard
@@ -88,6 +144,8 @@ export default function StocksPage() {
             />
           ))}
         </div>
+      ) : (
+        <EmptyState locale={locale} />
       )}
     </div>
   )

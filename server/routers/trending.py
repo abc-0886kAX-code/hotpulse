@@ -7,6 +7,8 @@ from server.services.supabase_client import supabase
 
 router = APIRouter(prefix="/api/trending", tags=["trending"])
 
+PLATFORM_ORDER = {"weibo": 0, "hackernews": 1, "reddit": 2, "youtube": 3, "twitter": 4}
+
 
 @router.get("")
 async def get_trending_list(
@@ -23,10 +25,37 @@ async def get_trending_list(
 
     def _fetch():
         resp = query.order("heat_score", desc=True).range(offset, offset + page_size - 1).execute()
-        return resp.data, resp.count
+        items = resp.data
+        items.sort(key=lambda x: PLATFORM_ORDER.get(x.get("platform", ""), 99))
+        return items, resp.count
 
     items, total = await asyncio.to_thread(_fetch)
     return {"items": items, "total": total, "page": page, "page_size": page_size}
+
+
+@router.get("/stats")
+async def get_trending_stats():
+    def _fetch():
+        all_items = supabase.table("trending_items").select("*").execute().data
+
+        category_dist: dict = {}
+        sentiment_dist: dict = {}
+        for item in all_items:
+            cat = item.get("category", "other")
+            category_dist[cat] = category_dist.get(cat, 0) + 1
+            sent = item.get("sentiment", "neutral")
+            sentiment_dist[sent] = sentiment_dist.get(sent, 0) + 1
+
+        top_heat = sorted(all_items, key=lambda x: x.get("heat_score", 0), reverse=True)[:10]
+
+        return {
+            "categoryDistribution": category_dist,
+            "sentimentDistribution": sentiment_dist,
+            "topHeat": top_heat,
+        }
+
+    stats = await asyncio.to_thread(_fetch)
+    return stats
 
 
 @router.get("/{item_id}")

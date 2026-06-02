@@ -20,6 +20,19 @@ async def get_stocks():
     return {"items": items}
 
 
+@router.get("/analysis")
+async def get_market_analysis():
+    def _fetch():
+        return supabase.table("market_analysis").select("*")\
+            .order("generated_at", desc=True)\
+            .limit(1).execute().data
+
+    items = await asyncio.to_thread(_fetch)
+    if items:
+        return {"item": items[0]}
+    return {"item": None}
+
+
 @router.get("/history/{symbol}")
 async def get_stock_history(symbol: str, days: int = Query(30, ge=1, le=90)):
     def _fetch():
@@ -40,7 +53,7 @@ async def get_stock_history(symbol: str, days: int = Query(30, ge=1, le=90)):
 
 
 @router.get("/history-all")
-async def get_all_stock_history(days: int = Query(7, ge=1, le=30)):
+async def get_all_stock_history(days: int = Query(7, ge=1, le=90)):
     result = {}
     for symbol in SYMBOLS:
         def _fetch(s=symbol):

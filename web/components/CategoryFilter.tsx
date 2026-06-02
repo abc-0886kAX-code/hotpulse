@@ -17,8 +17,8 @@ export default function CategoryFilter({ activeCategory, onCategoryChange, local
           onClick={() => onCategoryChange(cat.slug)}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             activeCategory === cat.slug
-              ? 'bg-blue-500 text-white'
-              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+              ? 'bg-blue-600 text-white'
+              : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
           }`}
         >
           {locale === 'zh' ? cat.zh : cat.en}

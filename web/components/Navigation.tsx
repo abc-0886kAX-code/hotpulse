@@ -15,10 +15,10 @@ export default function Navigation() {
   ]
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-xl">
+    <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white shadow-sm">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
         <div className="flex items-center gap-6">
-          <Link href="/" className="text-lg font-bold text-zinc-50">
+          <Link href="/" className="text-lg font-bold text-blue-600">
             HotPulse
           </Link>
           <div className="flex items-center gap-1">
@@ -30,8 +30,8 @@ export default function Navigation() {
                   href={tab.href}
                   className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-zinc-800 text-zinc-50'
-                      : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                   }`}
                 >
                   {tab.label}
@@ -42,7 +42,7 @@ export default function Navigation() {
         </div>
         <button
           onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
-          className="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-zinc-100"
+          className="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-200"
         >
           {locale === 'zh' ? 'EN' : '中'}
         </button>

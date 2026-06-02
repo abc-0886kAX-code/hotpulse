@@ -14,7 +14,7 @@ export default function LoadMore({ onClick, loading, locale }: LoadMoreProps) {
       <button
         onClick={onClick}
         disabled={loading}
-        className="rounded-lg border border-zinc-800 bg-zinc-900 px-8 py-2.5 text-sm font-medium text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-200 disabled:opacity-50"
+        className="rounded-lg border border-slate-200 bg-white px-8 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 disabled:opacity-50"
       >
         {loading ? t(locale, 'loading') : t(locale, 'load.more')}
       </button>

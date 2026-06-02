@@ -28,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh">
-      <body className="min-h-screen bg-zinc-950 text-zinc-100 antialiased" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
+      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
         <AppProvider>
           <Navigation />
           <main>{children}</main>

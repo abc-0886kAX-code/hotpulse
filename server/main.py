@@ -12,7 +12,7 @@ from server.routers.stocks import router as stocks_router
 from server.services.supabase_client import supabase, seed_quotes
 from server.services.seed_data import seed_initial_data
 from server.services.scrapers import fetch_all_trending
-from server.services.ai_processor import process_trending_item
+from server.services.ai_processor import process_trending_item, generate_market_analysis
 from server.services.stock_fetcher import fetch_stock_indices
 
 logging.basicConfig(level=logging.INFO)
@@ -70,6 +70,7 @@ async def _do_fetch_trending():
             "source_url": item.get("source_url", ""),
             "title": item.get("title", ""),
             "original_text": item.get("original_text", ""),
+            "content_snippet": item.get("content_snippet", item.get("original_text", "")),
             "ai_summary_zh": item.get("ai_summary_zh", ""),
             "ai_summary_en": item.get("ai_summary_en", ""),
             "category": item.get("category", "other"),
@@ -103,6 +104,9 @@ async def _do_fetch_stocks():
         history_all.extend(h)
     logger.info(f"获取到 {len(history_all)} 条历史数据")
 
+    analysis = await generate_market_analysis(indices, history_all)
+    logger.info(f"AI 市场分析生成: {'成功' if analysis else '跳过'}")
+
     def _save():
         supabase.table("stock_indices").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
         snapshot_rows = [{
@@ -122,8 +126,15 @@ async def _do_fetch_stocks():
                     on_conflict="symbol,snapshot_time",
                 ).execute()
 
+        if analysis and analysis.get("content_zh"):
+            supabase.table("market_analysis").insert({
+                "content_zh": analysis["content_zh"],
+                "content_en": analysis.get("content_en", ""),
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+            }).execute()
+
     await asyncio.to_thread(_save)
-    logger.info(f"保存 {len(indices)} 个快照 + {len(history_all)} 条历史")
+    logger.info(f"保存 {len(indices)} 个快照 + {len(history_all)} 条历史 + 市场分析")
 
 
 @app.post("/api/cron/fetch-stocks")
