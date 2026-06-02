@@ -21,6 +21,7 @@ export const platformNames: Record<string, { zh: string; en: string }> = {
 const messages: Record<Locale, Record<string, string>> = {
   zh: {
     'nav.news': '新闻', 'nav.stocks': '股市',
+    'region.all': '全部', 'region.domestic': '国内', 'region.foreign': '国际',
     'stock.overview': '全球市场概览',
     'stock.shanghai': '上证指数', 'stock.nasdaq': '纳斯达克',
     'stock.hsi': '恒生指数', 'stock.sp500': '标普500',
@@ -33,6 +34,7 @@ const messages: Record<Locale, Record<string, string>> = {
   },
   en: {
     'nav.news': 'News', 'nav.stocks': 'Stocks',
+    'region.all': 'All', 'region.domestic': 'Domestic', 'region.foreign': 'International',
     'stock.overview': 'Global Market Overview',
     'stock.shanghai': 'Shanghai', 'stock.nasdaq': 'NASDAQ',
     'stock.hsi': 'Hang Seng', 'stock.sp500': 'S&P 500',

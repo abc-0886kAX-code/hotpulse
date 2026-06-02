@@ -8,7 +8,7 @@ import CategoryFilter from '@/components/CategoryFilter'
 import LoadMore from '@/components/LoadMore'
 import EmptyState from '@/components/EmptyState'
 import ViewTabs from '@/components/ViewTabs'
-import { type Locale, categories, t } from '@/lib/i18n'
+import { type Locale, t } from '@/lib/i18n'
 import { fetchTrending, fetchTrendingStats } from '@/lib/api'
 import type { TrendingItem, TrendingStats } from '@/lib/api'
 
@@ -16,16 +16,18 @@ export default function NewsPage() {
   const { locale, quote } = useApp()
   const [activeCategory, setActiveCategory] = useState('all')
   const [viewMode, setViewMode] = useState('all')
+  const [region, setRegion] = useState('domestic')
   const [items, setItems] = useState<TrendingItem[]>([])
   const [stats, setStats] = useState<TrendingStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [page, setPage] = useState(1)
 
-  const loadData = useCallback(async (cat: string, pg: number, append: boolean) => {
+  const loadData = useCallback(async (cat: string, rg: string, pg: number, append: boolean) => {
     try {
-      const params: { category?: string; page: number; page_size: number } = { page: pg, page_size: 20 }
+      const params: { category?: string; region?: string; page: number; page_size: number } = { page: pg, page_size: 20 }
       if (cat !== 'all') params.category = cat
+      if (rg !== 'all') params.region = rg
 
       const data = await fetchTrending(params).catch(() => null)
       if (data && data.length > 0) {
@@ -49,8 +51,8 @@ export default function NewsPage() {
   useEffect(() => {
     setLoading(true)
     setPage(1)
-    loadData(activeCategory, 1, false)
-  }, [activeCategory, locale, viewMode, loadData])
+    loadData(activeCategory, region, 1, false)
+  }, [activeCategory, region, locale, viewMode, loadData])
 
   useEffect(() => {
     if (viewMode === 'ai' && items.length > 0) {
@@ -62,12 +64,18 @@ export default function NewsPage() {
     setLoadingMore(true)
     const nextPage = page + 1
     setPage(nextPage)
-    loadData(activeCategory, nextPage, true)
+    loadData(activeCategory, region, nextPage, true)
   }
 
   const newsTabs = [
     { key: 'all', label: locale === 'zh' ? '全部新闻' : 'All News' },
     { key: 'ai', label: locale === 'zh' ? 'AI 分析' : 'AI Analysis' },
+  ]
+
+  const regionTabs = [
+    { key: 'domestic', label: t(locale, 'region.domestic') },
+    { key: 'foreign', label: t(locale, 'region.foreign') },
+    { key: 'all', label: t(locale, 'region.all') },
   ]
 
   return (
@@ -77,7 +85,12 @@ export default function NewsPage() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
-        <ViewTabs tabs={newsTabs} active={viewMode} onChange={setViewMode} />
+        <div className="flex items-center gap-3">
+          <ViewTabs tabs={newsTabs} active={viewMode} onChange={setViewMode} />
+          {viewMode === 'all' && (
+            <ViewTabs tabs={regionTabs} active={region} onChange={setRegion} />
+          )}
+        </div>
         {viewMode === 'all' && (
           <CategoryFilter
             activeCategory={activeCategory}

@@ -53,9 +53,10 @@ export interface MarketAnalysis {
   generated_at: string
 }
 
-export async function fetchTrending(params?: { category?: string; page?: number; page_size?: number }): Promise<TrendingItem[]> {
+export async function fetchTrending(params?: { category?: string; region?: string; page?: number; page_size?: number }): Promise<TrendingItem[]> {
   const query = new URLSearchParams()
   if (params?.category) query.set('category', params.category)
+  if (params?.region) query.set('region', params.region)
   if (params?.page) query.set('page', String(params.page))
   if (params?.page_size) query.set('page_size', String(params.page_size))
   const res = await fetch(`${API_BASE}/api/trending?${query}`)

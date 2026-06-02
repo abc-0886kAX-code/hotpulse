@@ -7,12 +7,15 @@ from server.services.supabase_client import supabase
 
 router = APIRouter(prefix="/api/trending", tags=["trending"])
 
-PLATFORM_ORDER = {"weibo": 0, "hackernews": 1, "reddit": 2, "youtube": 3, "twitter": 4}
+DOMESTIC_PLATFORMS = ("daily60s", "weibo")
+FOREIGN_PLATFORMS = ("reddit", "hackernews", "youtube", "twitter")
+PLATFORM_ORDER = {"daily60s": 0, "weibo": 1, "hackernews": 2, "reddit": 3, "youtube": 4, "twitter": 5}
 
 
 @router.get("")
 async def get_trending_list(
     category: Optional[str] = Query(None),
+    region: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
@@ -20,6 +23,11 @@ async def get_trending_list(
 
     if category:
         query = query.eq("category", category)
+
+    if region == "domestic":
+        query = query.in_("platform", list(DOMESTIC_PLATFORMS))
+    elif region == "foreign":
+        query = query.in_("platform", list(FOREIGN_PLATFORMS))
 
     offset = (page - 1) * page_size
 
