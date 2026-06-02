@@ -44,3 +44,38 @@ async def fetch_stock_indices() -> list[dict]:
     except Exception:
         pass
     return results
+
+
+async def fetch_stock_history(symbol: str, days: int = 30) -> list[dict]:
+    try:
+        url = f"{settings.yahoo_finance_api_url}/{symbol}"
+        range_map = {5: "5d", 7: "5d", 14: "14d", 30: "30d", 60: "60d", 90: "90d"}
+        range_val = range_map.get(days, "30d")
+        params = {"interval": "1d", "range": range_val}
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+            result = data.get("chart", {}).get("result", [])
+            if not result:
+                return []
+            timestamps = result[0].get("timestamp", [])
+            closes = result[0].get("indicators", {}).get("quote", [{}])[0].get("close", [])
+            history = []
+            for ts, price in zip(timestamps, closes):
+                if price is None:
+                    continue
+                dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+                history.append({
+                    "symbol": symbol,
+                    "name": SYMBOLS.get(symbol, symbol),
+                    "price": round(price, 2),
+                    "snapshot_time": dt.isoformat(),
+                })
+            prev_close = result[0].get("meta", {}).get("chartPreviousClose", 0)
+            if prev_close and history:
+                latest = history[-1]
+                latest["change_pct"] = round((latest["price"] - prev_close) / prev_close * 100, 2)
+            return history
+    except Exception:
+        return []

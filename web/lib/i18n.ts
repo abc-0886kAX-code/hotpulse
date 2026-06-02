@@ -20,24 +20,28 @@ export const platformNames: Record<string, { zh: string; en: string }> = {
 
 const messages: Record<Locale, Record<string, string>> = {
   zh: {
-    'nav.hot': '热点', 'nav.tech': '科技', 'nav.finance': '财经',
-    'nav.entertainment': '娱乐', 'nav.sports': '体育',
-    'stock.title': '股市速报', 'stock.shanghai': '上证指数', 'stock.nasdaq': '纳斯达克',
+    'nav.news': '新闻', 'nav.stocks': '股市',
+    'stock.overview': '全球市场概览',
+    'stock.shanghai': '上证指数', 'stock.nasdaq': '纳斯达克',
     'stock.hsi': '恒生指数', 'stock.sp500': '标普500',
-    'quote.share': '分享', 'load.more': '加载更多', 'loading': '加载中...',
+    'quote.share': '分享', 'quote.export': '导出图片',
+    'load.more': '加载更多', 'loading': '加载中...',
     'sentiment.positive': '正面', 'sentiment.negative': '负面', 'sentiment.neutral': '中性',
-    'ad.placeholder': '广告位 AdSense',
-    'meta.ago': '{time}前', 'meta.discussions': '{count} 讨论', 'meta.heat': '热度 {score}',
+    'meta.ago': '{time}前', 'meta.heat': '热度 {score}',
+    'export.csv': '导出 CSV', 'share.twitter': '分享到 Twitter', 'share.weibo': '分享到微博',
+    'share.copy': '复制链接', 'copied': '已复制',
   },
   en: {
-    'nav.hot': 'Hot', 'nav.tech': 'Tech', 'nav.finance': 'Finance',
-    'nav.entertainment': 'Entertainment', 'nav.sports': 'Sports',
-    'stock.title': 'Stock Market', 'stock.shanghai': 'Shanghai', 'stock.nasdaq': 'NASDAQ',
+    'nav.news': 'News', 'nav.stocks': 'Stocks',
+    'stock.overview': 'Global Market Overview',
+    'stock.shanghai': 'Shanghai', 'stock.nasdaq': 'NASDAQ',
     'stock.hsi': 'Hang Seng', 'stock.sp500': 'S&P 500',
-    'quote.share': 'Share', 'load.more': 'Load More', 'loading': 'Loading...',
+    'quote.share': 'Share', 'quote.export': 'Export Image',
+    'load.more': 'Load More', 'loading': 'Loading...',
     'sentiment.positive': 'Positive', 'sentiment.negative': 'Negative', 'sentiment.neutral': 'Neutral',
-    'ad.placeholder': 'Ad Space',
-    'meta.ago': '{time} ago', 'meta.discussions': '{count} comments', 'meta.heat': 'Heat {score}',
+    'meta.ago': '{time} ago', 'meta.heat': 'Heat {score}',
+    'export.csv': 'Export CSV', 'share.twitter': 'Share on Twitter', 'share.weibo': 'Share on Weibo',
+    'share.copy': 'Copy Link', 'copied': 'Copied',
   }
 }
 

@@ -1,5 +1,9 @@
+'use client'
+
 import { type Quote } from '@/lib/api'
 import { type Locale, t } from '@/lib/i18n'
+import { exportQuoteAsImage } from '@/lib/export'
+import ShareButton from './ShareButton'
 
 interface DailyQuoteProps {
   quote: Quote
@@ -7,16 +11,24 @@ interface DailyQuoteProps {
 }
 
 export default function DailyQuote({ quote, locale }: DailyQuoteProps) {
+  const text = locale === 'zh' ? quote.text_zh : quote.text_en
+
   return (
-    <div className="border-l-4 border-[#f093fb] bg-[#16213e] rounded-r-lg p-4">
-      <p className="italic text-[#e0e0e0]">
-        &ldquo;{locale === 'zh' ? quote.text_zh : quote.text_en}&rdquo;
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+      <p className="italic leading-relaxed text-zinc-200">
+        &ldquo;{text}&rdquo;
       </p>
-      <div className="mt-2 flex items-center justify-between text-sm text-[#888]">
+      <div className="mt-3 flex items-center justify-between text-sm text-zinc-500">
         <span>— {quote.author}</span>
-        <button className="rounded px-2 py-1 text-xs transition-colors hover:bg-white/10 hover:text-[#e0e0e0]">
-          {t(locale, 'quote.share')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => exportQuoteAsImage(quote, locale)}
+            className="rounded-lg px-3 py-1 text-xs transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+          >
+            {t(locale, 'quote.export')}
+          </button>
+          <ShareButton text={text} locale={locale} />
+        </div>
       </div>
     </div>
   )

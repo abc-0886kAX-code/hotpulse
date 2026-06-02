@@ -6,11 +6,6 @@ interface StockWidgetProps {
   locale: Locale
 }
 
-function stockNameKey(name: string): string {
-  const key = `stock.${name.toLowerCase()}`
-  return key
-}
-
 const stockDisplayNames: Record<string, { zh: string; en: string }> = {
   '上证指数': { zh: '上证指数', en: 'Shanghai' },
   '纳斯达克': { zh: '纳斯达克', en: 'NASDAQ' },
@@ -20,8 +15,8 @@ const stockDisplayNames: Record<string, { zh: string; en: string }> = {
 
 export default function StockWidget({ stocks, locale }: StockWidgetProps) {
   return (
-    <div className="rounded-lg border border-[#333] bg-[#16213e] p-4">
-      <h3 className="mb-3 text-sm font-semibold text-[#4facfe]">
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+      <h3 className="mb-3 text-sm font-semibold text-blue-500">
         {t(locale, 'stock.title')}
       </h3>
       <div className="space-y-2">
@@ -30,14 +25,14 @@ export default function StockWidget({ stocks, locale }: StockWidgetProps) {
           const isPositive = stock.change_pct >= 0
           return (
             <div key={stock.id} className="flex items-center justify-between text-sm">
-              <span className="text-[#e0e0e0]">
+              <span className="text-zinc-200">
                 {locale === 'zh' ? display.zh : display.en}
               </span>
               <div className="text-right">
-                <span className="text-[#e0e0e0]">{stock.price.toFixed(2)}</span>
+                <span className="text-zinc-200">{stock.price.toFixed(2)}</span>
                 <span
                   className={`ml-2 text-xs ${
-                    isPositive ? 'text-[#00c853]' : 'text-[#ff1744]'
+                    isPositive ? 'text-green-400' : 'text-red-400'
                   }`}
                 >
                   {isPositive ? '+' : ''}{stock.change_pct.toFixed(2)}%

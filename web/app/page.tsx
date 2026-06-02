@@ -1,33 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import Navigation from '@/components/Navigation'
+import { useApp } from '@/lib/app-context'
 import DailyQuote from '@/components/DailyQuote'
 import FeedCard from '@/components/FeedCard'
-import StockWidget from '@/components/StockWidget'
 import CategoryFilter from '@/components/CategoryFilter'
-import AdBanner from '@/components/AdBanner'
 import LoadMore from '@/components/LoadMore'
 import { type Locale } from '@/lib/i18n'
-import { fetchTrending, fetchDailyQuote, fetchStocks } from '@/lib/api'
-import type { TrendingItem, Quote, StockIndex } from '@/lib/api'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-
-const fallbackQuote: Quote = {
-  id: 'fallback',
-  text_zh: '唯一伟大的做事方式就是热爱你所做的事。',
-  text_en: 'The only way to do great work is to love what you do.',
-  author: 'Steve Jobs',
-  category: 'motivation',
-}
-
-const fallbackStocks: StockIndex[] = [
-  { id: '1', symbol: '000001.SS', name: '上证指数', price: 3245.68, change_pct: 1.23, snapshot_time: new Date().toISOString() },
-  { id: '2', symbol: '^IXIC', name: '纳斯达克', price: 18456.78, change_pct: 0.87, snapshot_time: new Date().toISOString() },
-  { id: '3', symbol: '^HSI', name: '恒生指数', price: 18234.56, change_pct: -0.32, snapshot_time: new Date().toISOString() },
-  { id: '4', symbol: '^GSPC', name: '标普500', price: 5678.90, change_pct: 0.56, snapshot_time: new Date().toISOString() },
-]
+import { fetchTrending } from '@/lib/api'
+import type { TrendingItem } from '@/lib/api'
 
 const fallbackItems: TrendingItem[] = [
   {
@@ -80,38 +61,27 @@ const fallbackItems: TrendingItem[] = [
   },
 ]
 
-export default function Home() {
-  const [locale, setLocale] = useState<Locale>('zh')
+export default function NewsPage() {
+  const { locale, quote } = useApp()
   const [activeCategory, setActiveCategory] = useState('all')
   const [items, setItems] = useState<TrendingItem[]>([])
-  const [quote, setQuote] = useState<Quote>(fallbackQuote)
-  const [stocks, setStocks] = useState<StockIndex[]>(fallbackStocks)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [page, setPage] = useState(1)
 
   const loadData = useCallback(async (cat: string, pg: number, append: boolean) => {
     try {
-      const params: { category?: string; page: number; page_size: number } = { page: pg, page_size: 10 }
+      const params: { category?: string; page: number; page_size: number } = { page: pg, page_size: 20 }
       if (cat !== 'all') params.category = cat
 
-      const trendingData = await fetchTrending(params).catch(() => null)
-      if (trendingData && trendingData.length > 0) {
-        setItems(append ? (prev) => [...prev, ...trendingData] : trendingData)
+      const data = await fetchTrending(params).catch(() => null)
+      if (data && data.length > 0) {
+        setItems(append ? (prev) => [...prev, ...data] : data)
       } else if (pg === 1) {
         setItems(fallbackItems)
       }
-
-      if (pg === 1) {
-        const quoteData = await fetchDailyQuote().catch(() => null)
-        if (quoteData) setQuote(quoteData)
-        const stocksData = await fetchStocks().catch(() => null)
-        if (stocksData) setStocks(stocksData)
-      }
     } catch {
-      if (pg === 1) {
-        setItems(fallbackItems)
-      }
+      if (pg === 1) setItems(fallbackItems)
     } finally {
       setLoading(false)
       setLoadingMore(false)
@@ -132,51 +102,36 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f1a]">
-      <Navigation
-        locale={locale}
-        onLocaleChange={setLocale}
-        activeCategory={activeCategory}
-        onCategoryChange={setActiveCategory}
-      />
-
-      <div className="mx-auto max-w-7xl px-4 py-6">
-        <div className="mb-4">
-          <DailyQuote quote={quote} locale={locale} />
-        </div>
-
-        <div className="mb-4">
-          <CategoryFilter
-            activeCategory={activeCategory}
-            onCategoryChange={setActiveCategory}
-            locale={locale}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="space-y-4 lg:col-span-2">
-            {loading ? (
-              <div className="flex items-center justify-center py-20 text-[#888]">
-                {locale === 'zh' ? '加载中...' : 'Loading...'}
-              </div>
-            ) : (
-              items.map((item) => (
-                <FeedCard key={item.id} item={item} locale={locale} />
-              ))
-            )}
-
-            {items.length > 0 && !loading && (
-              <LoadMore onClick={handleLoadMore} loading={loadingMore} locale={locale} />
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <StockWidget stocks={stocks} locale={locale} />
-            <AdBanner slot="sidebar-1" height={250} />
-            <AdBanner slot="sidebar-2" height={150} />
-          </div>
-        </div>
+    <div className="mx-auto max-w-7xl px-4 py-6">
+      <div className="mb-6">
+        <DailyQuote quote={quote} locale={locale} />
       </div>
+
+      <div className="mb-6">
+        <CategoryFilter
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
+          locale={locale}
+        />
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-20 text-zinc-500">
+          {locale === 'zh' ? '加载中...' : 'Loading...'}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {items.map((item) => (
+              <FeedCard key={item.id} item={item} locale={locale} />
+            ))}
+          </div>
+
+          {items.length > 0 && (
+            <LoadMore onClick={handleLoadMore} loading={loadingMore} locale={locale} />
+          )}
+        </>
+      )}
     </div>
   )
 }

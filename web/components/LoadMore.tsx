@@ -10,11 +10,11 @@ interface LoadMoreProps {
 
 export default function LoadMore({ onClick, loading, locale }: LoadMoreProps) {
   return (
-    <div className="flex justify-center py-6">
+    <div className="flex justify-center py-8">
       <button
         onClick={onClick}
         disabled={loading}
-        className="rounded-lg border border-[#333] bg-[#16213e] px-8 py-2 text-[#888] transition-colors hover:border-[#667eea] hover:text-white disabled:opacity-50"
+        className="rounded-lg border border-zinc-800 bg-zinc-900 px-8 py-2.5 text-sm font-medium text-zinc-400 transition-colors hover:border-zinc-700 hover:text-zinc-200 disabled:opacity-50"
       >
         {loading ? t(locale, 'loading') : t(locale, 'load.more')}
       </button>

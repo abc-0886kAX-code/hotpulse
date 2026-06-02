@@ -92,23 +92,38 @@ async def cron_fetch_trending():
 
 
 async def _do_fetch_stocks():
+    from server.services.stock_fetcher import fetch_stock_history
     indices = await fetch_stock_indices()
-    logger.info(f"获取到 {len(indices)} 个股票指数")
+    logger.info(f"获取到 {len(indices)} 个股票指数最新快照")
+
+    history_all = []
+    for item in indices:
+        sym = item.get("symbol", "")
+        h = await fetch_stock_history(sym, 30)
+        history_all.extend(h)
+    logger.info(f"获取到 {len(history_all)} 条历史数据")
 
     def _save():
         supabase.table("stock_indices").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
-        rows = [{
+        snapshot_rows = [{
             "symbol": item.get("symbol", ""),
             "name": item.get("name", ""),
             "price": item.get("price", 0.0),
             "change_pct": item.get("change_pct", 0.0),
             "snapshot_time": item.get("snapshot_time", datetime.now(timezone.utc).isoformat()),
         } for item in indices]
-        if rows:
-            supabase.table("stock_indices").insert(rows).execute()
+        if snapshot_rows:
+            supabase.table("stock_indices").insert(snapshot_rows).execute()
+
+        if history_all:
+            for h in history_all:
+                supabase.table("stock_history").upsert(
+                    h,
+                    on_conflict="symbol,snapshot_time",
+                ).execute()
 
     await asyncio.to_thread(_save)
-    logger.info(f"保存 {len(indices)} 个股票指数")
+    logger.info(f"保存 {len(indices)} 个快照 + {len(history_all)} 条历史")
 
 
 @app.post("/api/cron/fetch-stocks")

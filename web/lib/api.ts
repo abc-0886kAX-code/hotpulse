@@ -32,6 +32,14 @@ export interface StockIndex {
   snapshot_time: string
 }
 
+export interface StockHistoryPoint {
+  symbol: string
+  name: string
+  price: number
+  change_pct?: number
+  snapshot_time: string
+}
+
 export async function fetchTrending(params?: { category?: string; page?: number; page_size?: number }): Promise<TrendingItem[]> {
   const query = new URLSearchParams()
   if (params?.category) query.set('category', params.category)
@@ -51,4 +59,15 @@ export async function fetchStocks(): Promise<StockIndex[]> {
   const res = await fetch(`${API_BASE}/api/stocks`)
   const data = await res.json()
   return data.items ?? []
+}
+
+export async function fetchAllStockHistory(days: number = 30): Promise<Record<string, StockHistoryPoint[]>> {
+  const res = await fetch(`${API_BASE}/api/stocks/history-all?days=${days}`)
+  return res.json()
+}
+
+export async function fetchStockHistory(symbol: string, days: number = 30): Promise<StockHistoryPoint[]> {
+  const res = await fetch(`${API_BASE}/api/stocks/history/${encodeURIComponent(symbol)}?days=${days}`)
+  const data = await res.json()
+  return data.data ?? []
 }

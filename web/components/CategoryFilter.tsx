@@ -15,10 +15,10 @@ export default function CategoryFilter({ activeCategory, onCategoryChange, local
         <button
           key={cat.slug}
           onClick={() => onCategoryChange(cat.slug)}
-          className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             activeCategory === cat.slug
-              ? 'bg-[#667eea] text-white'
-              : 'bg-[#16213e] text-[#888] hover:text-[#e0e0e0]'
+              ? 'bg-blue-500 text-white'
+              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
           }`}
         >
           {locale === 'zh' ? cat.zh : cat.en}

@@ -1,5 +1,6 @@
 import { type TrendingItem } from '@/lib/api'
 import { type Locale, platformNames, t } from '@/lib/i18n'
+import ShareButton from './ShareButton'
 
 interface FeedCardProps {
   item: TrendingItem
@@ -16,19 +17,7 @@ function relativeTime(dateStr: string): string {
   return `${Math.floor(diff / 86400)}d`
 }
 
-function sentimentLabel(sentiment: string, locale: Locale) {
-  if (sentiment === 'positive') return t(locale, 'sentiment.positive')
-  if (sentiment === 'negative') return t(locale, 'sentiment.negative')
-  return t(locale, 'sentiment.neutral')
-}
-
-function sentimentColor(sentiment: string) {
-  if (sentiment === 'positive') return 'bg-[#00c853]/20 text-[#00c853]'
-  if (sentiment === 'negative') return 'bg-[#ff1744]/20 text-[#ff1744]'
-  return 'bg-[#ff9800]/20 text-[#ff9800]'
-}
-
-const navCategoryMap: Record<string, { zh: string; en: string }> = {
+const categoryMap: Record<string, { zh: string; en: string }> = {
   tech: { zh: '科技', en: 'Tech' },
   finance: { zh: '财经', en: 'Finance' },
   entertainment: { zh: '娱乐', en: 'Entertainment' },
@@ -37,36 +26,50 @@ const navCategoryMap: Record<string, { zh: string; en: string }> = {
   other: { zh: '其他', en: 'Other' },
 }
 
+const sentimentStyles: Record<string, string> = {
+  positive: 'bg-green-500/15 text-green-400',
+  negative: 'bg-red-500/15 text-red-400',
+  neutral: 'bg-amber-500/15 text-amber-400',
+}
+
 export default function FeedCard({ item, locale }: FeedCardProps) {
   const platform = platformNames[item.platform] ?? { zh: item.platform, en: item.platform }
-  const cat = navCategoryMap[item.category] ?? { zh: item.category, en: item.category }
+  const cat = categoryMap[item.category] ?? { zh: item.category, en: item.category }
+  const summary = locale === 'zh' ? item.ai_summary_zh : item.ai_summary_en
 
   return (
-    <div className="rounded-lg border border-[#333] bg-[#16213e] p-4 transition-colors hover:border-[#667eea]/50">
-      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-        <span className="text-[#667eea]">{locale === 'zh' ? platform.zh : platform.en}</span>
-        <span className="rounded bg-[#667eea]/20 px-1.5 py-0.5 text-[#667eea]">
-          {locale === 'zh' ? cat.zh : cat.en}
-        </span>
-        <span className={`rounded px-1.5 py-0.5 ${sentimentColor(item.sentiment)}`}>
-          {sentimentLabel(item.sentiment, locale)}
-        </span>
+    <div className="group flex min-h-[200px] flex-col rounded-xl border border-zinc-800 bg-zinc-900 p-5 transition-all hover:border-zinc-700 hover:shadow-lg hover:shadow-black/20">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="text-zinc-500">{locale === 'zh' ? platform.zh : platform.en}</span>
+          <span className="rounded-md bg-blue-500/10 px-1.5 py-0.5 text-blue-400">
+            {locale === 'zh' ? cat.zh : cat.en}
+          </span>
+          <span className={`rounded-md px-1.5 py-0.5 ${sentimentStyles[item.sentiment] ?? sentimentStyles.neutral}`}>
+            {item.sentiment === 'positive' ? t(locale, 'sentiment.positive')
+              : item.sentiment === 'negative' ? t(locale, 'sentiment.negative')
+              : t(locale, 'sentiment.neutral')}
+          </span>
+        </div>
+        <ShareButton text={item.title} url={item.source_url} locale={locale} />
       </div>
-      <h3 className="mb-2 text-base font-semibold text-[#e0e0e0]">
-        <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-[#667eea]">
-          {item.title}
-        </a>
-      </h3>
-      <p className="mb-3 text-sm text-[#888]">
-        {locale === 'zh' ? item.ai_summary_zh : item.ai_summary_en}
+
+      <a
+        href={item.source_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mb-2 line-clamp-2 text-base font-semibold leading-snug text-zinc-100 transition-colors hover:text-blue-400"
+      >
+        {item.title}
+      </a>
+
+      <p className="mb-auto line-clamp-3 flex-1 text-sm leading-relaxed text-zinc-400">
+        {summary}
       </p>
-      <div className="flex items-center gap-4 text-xs text-[#888]">
-        <span>
-          {t(locale, 'meta.ago').replace('{time}', relativeTime(item.published_at))}
-        </span>
-        <span>
-          {t(locale, 'meta.heat').replace('{score}', String(item.heat_score))}
-        </span>
+
+      <div className="mt-3 flex items-center gap-3 border-t border-zinc-800 pt-3 text-xs text-zinc-500">
+        <span>{t(locale, 'meta.ago').replace('{time}', relativeTime(item.published_at))}</span>
+        <span>{t(locale, 'meta.heat').replace('{score}', String(item.heat_score))}</span>
       </div>
     </div>
   )
