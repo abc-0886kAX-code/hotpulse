@@ -54,8 +54,7 @@ async def health_check():
     return {"status": "ok"}
 
 
-@app.post("/api/cron/fetch-trending")
-async def cron_fetch_trending():
+async def _do_fetch_trending():
     items = await fetch_all_trending()
     logger.info(f"获取到 {len(items)} 条热门话题")
 
@@ -84,11 +83,15 @@ async def cron_fetch_trending():
 
     await asyncio.to_thread(_save)
     logger.info(f"保存 {len(processed)} 条热门话题")
-    return {"status": "ok", "count": len(processed)}
 
 
-@app.post("/api/cron/fetch-stocks")
-async def cron_fetch_stocks():
+@app.post("/api/cron/fetch-trending")
+async def cron_fetch_trending():
+    asyncio.create_task(_do_fetch_trending())
+    return {"status": "accepted", "message": "热点抓取已在后台启动"}
+
+
+async def _do_fetch_stocks():
     indices = await fetch_stock_indices()
     logger.info(f"获取到 {len(indices)} 个股票指数")
 
@@ -106,4 +109,9 @@ async def cron_fetch_stocks():
 
     await asyncio.to_thread(_save)
     logger.info(f"保存 {len(indices)} 个股票指数")
-    return {"status": "ok", "count": len(indices)}
+
+
+@app.post("/api/cron/fetch-stocks")
+async def cron_fetch_stocks():
+    asyncio.create_task(_do_fetch_stocks())
+    return {"status": "accepted", "message": "股市数据抓取已在后台启动"}
