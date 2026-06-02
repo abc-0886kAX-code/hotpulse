@@ -10,6 +10,7 @@ from server.routers.trending import router as trending_router
 from server.routers.quotes import router as quotes_router
 from server.routers.stocks import router as stocks_router
 from server.services.supabase_client import supabase, seed_quotes
+from server.services.seed_data import seed_initial_data
 from server.services.scrapers import fetch_all_trending
 from server.services.ai_processor import process_trending_item
 from server.services.stock_fetcher import fetch_stock_indices
@@ -23,6 +24,7 @@ async def lifespan(app: FastAPI):
     logger.info("初始化 Supabase...")
     count = seed_quotes()
     logger.info(f"名言种子数据: {count} 条")
+    await seed_initial_data()
     yield
     logger.info("应用关闭")
 
