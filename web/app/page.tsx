@@ -88,30 +88,29 @@ export default function Home() {
   const [stocks, setStocks] = useState<StockIndex[]>(fallbackStocks)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [offset, setOffset] = useState(0)
-  const limit = 10
+  const [page, setPage] = useState(1)
 
-  const loadData = useCallback(async (cat: string, off: number, append: boolean) => {
+  const loadData = useCallback(async (cat: string, pg: number, append: boolean) => {
     try {
-      const params: { category?: string; limit: number; offset: number } = { limit, offset: off }
+      const params: { category?: string; page: number; page_size: number } = { page: pg, page_size: 10 }
       if (cat !== 'all') params.category = cat
 
       const [trendingRes, quoteRes, stocksRes] = await Promise.allSettled([
         fetchTrending(params),
-        off === 0 ? fetchDailyQuote() : Promise.resolve(quote),
-        off === 0 ? fetchStocks() : Promise.resolve(stocks),
+        pg === 1 ? fetchDailyQuote() : Promise.resolve(quote),
+        pg === 1 ? fetchStocks() : Promise.resolve(stocks),
       ])
 
       if (trendingRes.status === 'fulfilled' && trendingRes.value.length > 0) {
         setItems(append ? (prev) => [...prev, ...trendingRes.value] : trendingRes.value)
-      } else if (off === 0) {
+      } else if (pg === 1) {
         setItems(fallbackItems)
       }
 
       if (quoteRes.status === 'fulfilled') setQuote(quoteRes.value)
       if (stocksRes.status === 'fulfilled') setStocks(stocksRes.value)
     } catch {
-      if (off === 0) {
+      if (pg === 1) {
         setItems(fallbackItems)
       }
     } finally {
@@ -122,15 +121,15 @@ export default function Home() {
 
   useEffect(() => {
     setLoading(true)
-    setOffset(0)
-    loadData(activeCategory, 0, false)
+    setPage(1)
+    loadData(activeCategory, 1, false)
   }, [activeCategory, locale, loadData])
 
   const handleLoadMore = () => {
     setLoadingMore(true)
-    const newOffset = offset + limit
-    setOffset(newOffset)
-    loadData(activeCategory, newOffset, true)
+    const nextPage = page + 1
+    setPage(nextPage)
+    loadData(activeCategory, nextPage, true)
   }
 
   return (

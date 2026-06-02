@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: hotpulse-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.6"
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_BASE_URL
+        value: https://open.bigmodel.cn/api/anthropic
+      - key: AI_MODEL
+        value: glm-4-flash
+
+crons:
+  - name: fetch-trending
+    schedule: "0 * * * *"
+    command: curl -X POST https://${hotpulse-api.onrender.com}/api/cron/fetch-trending
+  - name: fetch-stocks
+    schedule: "*/5 * * * *"
+    command: curl -X POST https://${hotpulse-api.onrender.com}/api/cron/fetch-stocks

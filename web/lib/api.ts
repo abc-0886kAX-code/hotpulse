@@ -32,13 +32,14 @@ export interface StockIndex {
   snapshot_time: string
 }
 
-export async function fetchTrending(params?: { category?: string; limit?: number; offset?: number }): Promise<TrendingItem[]> {
+export async function fetchTrending(params?: { category?: string; page?: number; page_size?: number }): Promise<TrendingItem[]> {
   const query = new URLSearchParams()
   if (params?.category) query.set('category', params.category)
-  if (params?.limit) query.set('limit', String(params.limit))
-  if (params?.offset) query.set('offset', String(params.offset))
+  if (params?.page) query.set('page', String(params.page))
+  if (params?.page_size) query.set('page_size', String(params.page_size))
   const res = await fetch(`${API_BASE}/api/trending?${query}`)
-  return res.json()
+  const data = await res.json()
+  return data.items ?? []
 }
 
 export async function fetchDailyQuote(): Promise<Quote> {
@@ -48,5 +49,6 @@ export async function fetchDailyQuote(): Promise<Quote> {
 
 export async function fetchStocks(): Promise<StockIndex[]> {
   const res = await fetch(`${API_BASE}/api/stocks`)
-  return res.json()
+  const data = await res.json()
+  return data.items ?? []
 }
