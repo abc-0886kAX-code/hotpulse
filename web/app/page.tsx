@@ -95,20 +95,19 @@ export default function Home() {
       const params: { category?: string; page: number; page_size: number } = { page: pg, page_size: 10 }
       if (cat !== 'all') params.category = cat
 
-      const [trendingRes, quoteRes, stocksRes] = await Promise.allSettled([
-        fetchTrending(params),
-        pg === 1 ? fetchDailyQuote() : Promise.resolve(quote),
-        pg === 1 ? fetchStocks() : Promise.resolve(stocks),
-      ])
-
-      if (trendingRes.status === 'fulfilled' && trendingRes.value.length > 0) {
-        setItems(append ? (prev) => [...prev, ...trendingRes.value] : trendingRes.value)
+      const trendingData = await fetchTrending(params).catch(() => null)
+      if (trendingData && trendingData.length > 0) {
+        setItems(append ? (prev) => [...prev, ...trendingData] : trendingData)
       } else if (pg === 1) {
         setItems(fallbackItems)
       }
 
-      if (quoteRes.status === 'fulfilled') setQuote(quoteRes.value)
-      if (stocksRes.status === 'fulfilled') setStocks(stocksRes.value)
+      if (pg === 1) {
+        const quoteData = await fetchDailyQuote().catch(() => null)
+        if (quoteData) setQuote(quoteData)
+        const stocksData = await fetchStocks().catch(() => null)
+        if (stocksData) setStocks(stocksData)
+      }
     } catch {
       if (pg === 1) {
         setItems(fallbackItems)
@@ -117,7 +116,7 @@ export default function Home() {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [quote, stocks])
+  }, [])
 
   useEffect(() => {
     setLoading(true)
