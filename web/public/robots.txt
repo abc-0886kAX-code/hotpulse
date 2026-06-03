@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hotpulse-psi.vercel.app/sitemap.xml

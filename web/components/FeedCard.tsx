@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { type TrendingItem } from '@/lib/api'
 import { type Locale, platformNames, t } from '@/lib/i18n'
 import ShareButton from './ShareButton'
@@ -90,14 +91,12 @@ export default function FeedCard({ item, locale, aiMode = false, rank }: FeedCar
         <ShareButton text={item.title} url={item.source_url} locale={locale} />
       </div>
 
-      <a
-        href={item.source_url}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        href={`/news/${item.id}`}
         className="mb-2 line-clamp-2 text-base font-semibold leading-snug text-slate-900 transition-colors group-hover:text-blue-600"
       >
         {item.title}
-      </a>
+      </Link>
 
       {aiMode && summary ? (
         <p className="mb-2 line-clamp-2 flex-1 text-sm leading-relaxed text-violet-600/80">
