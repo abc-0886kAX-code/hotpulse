@@ -14,6 +14,7 @@ from server.services.seed_data import seed_initial_data
 from server.services.scrapers import fetch_all_trending
 from server.services.ai_processor import process_trending_item, generate_market_analysis
 from server.services.stock_fetcher import fetch_stock_indices
+from server.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
