@@ -1,15 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useApp } from '@/lib/app-context'
 import { t } from '@/lib/i18n'
 import { fetchStocks, fetchAllStockHistory, fetchStockAnalysis } from '@/lib/api'
 import type { StockIndex, StockHistoryPoint, MarketAnalysis } from '@/lib/api'
-import StockCard from '@/components/StockCard'
+import MarketIndexCard from '@/components/MarketIndexCard'
+import MarketComparisonChart from '@/components/MarketComparisonChart'
 import EmptyState from '@/components/EmptyState'
 import ViewTabs from '@/components/ViewTabs'
-
-const fallbackStocks: StockIndex[] = []
 
 export default function StocksPage() {
   const { locale } = useApp()
@@ -61,6 +60,12 @@ export default function StocksPage() {
     a.click()
     URL.revokeObjectURL(url)
   }
+
+  const summary = useMemo(() => {
+    const rising = stocks.filter(s => s.change_pct > 0).length
+    const falling = stocks.filter(s => s.change_pct < 0).length
+    return { rising, falling, total: stocks.length }
+  }, [stocks])
 
   const stocksTabs = [
     { key: 'market', label: locale === 'zh' ? '行情数据' : 'Market' },
@@ -134,16 +139,38 @@ export default function StocksPage() {
           )}
         </div>
       ) : stocks.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {stocks.map((stock) => (
-            <StockCard
-              key={stock.id}
-              stock={stock}
-              history={history[stock.symbol] ?? []}
-              locale={locale}
-            />
-          ))}
-        </div>
+        <>
+          <div className="mb-4 grid grid-cols-3 gap-3">
+            <div className="rounded-lg border border-slate-200 bg-white p-3 text-center">
+              <p className="text-xs text-slate-400">{locale === 'zh' ? '监测指数' : 'Tracked'}</p>
+              <p className="text-xl font-bold text-slate-900">{summary.total}</p>
+            </div>
+            <div className="rounded-lg border border-green-100 bg-green-50 p-3 text-center">
+              <p className="text-xs text-green-600">{locale === 'zh' ? '上涨' : 'Rising'}</p>
+              <p className="text-xl font-bold text-green-600">{summary.rising}</p>
+            </div>
+            <div className="rounded-lg border border-red-100 bg-red-50 p-3 text-center">
+              <p className="text-xs text-red-600">{locale === 'zh' ? '下跌' : 'Falling'}</p>
+              <p className="text-xl font-bold text-red-600">{summary.falling}</p>
+            </div>
+          </div>
+
+          <MarketComparisonChart history={history} locale={locale} days={days} />
+
+          <h3 className="mb-4 mt-6 text-sm font-medium text-slate-500">
+            {locale === 'zh' ? '各指数详情' : 'Index Details'}
+          </h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {stocks.map((stock) => (
+              <MarketIndexCard
+                key={stock.id}
+                stock={stock}
+                history={history[stock.symbol] ?? []}
+                locale={locale}
+              />
+            ))}
+          </div>
+        </>
       ) : (
         <EmptyState locale={locale} />
       )}

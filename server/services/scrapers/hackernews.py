@@ -4,7 +4,7 @@ import httpx
 
 HN_TOP_URL = "https://hacker-news.firebaseio.com/v0/topstories.json"
 HN_ITEM_URL = "https://hacker-news.firebaseio.com/v0/item/{id}.json"
-TOP_N = 30
+TOP_N = 10
 
 
 async def fetch_hackernews() -> list[dict]:

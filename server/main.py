@@ -63,9 +63,10 @@ async def diagnose():
 
     sources = [
         ("60s", "https://60s.viki.moe/v2/60s"),
-        ("weibo_rss", "https://rsshub.app/weibo/hot"),
+        ("baidu", "https://api.vvhan.com/api/hotlist/baiduHot"),
+        ("zhihu", "https://api.vvhan.com/api/hotlist/zhihuHot"),
+        ("bilibili", "https://api.vvhan.com/api/hotlist/biliHot"),
         ("hackernews", "https://hacker-news.firebaseio.com/v0/topstories.json"),
-        ("reddit", "https://www.reddit.com/r/technology/hot.json"),
         ("yahoo_sh", f"{settings.yahoo_finance_api_url}/000001.SS"),
     ]
 
@@ -92,20 +93,23 @@ async def _do_fetch_trending():
         logger.warning("所有爬虫返回空结果，跳过保存以保护现有数据")
         return
 
-    processed = []
-    for item in items:
-        try:
-            result = await process_trending_item(item)
-            processed.append(result)
-        except Exception as e:
-            logger.error(f"AI 处理失败 [{item.get('platform')}]: {e}")
-            processed.append({
-                **item,
-                "ai_summary_zh": "",
-                "ai_summary_en": "",
-                "category": item.get("category", "other"),
-                "sentiment": item.get("sentiment", "neutral"),
-            })
+    sem = asyncio.Semaphore(5)
+
+    async def _process_one(item: dict) -> dict:
+        async with sem:
+            try:
+                return await process_trending_item(item)
+            except Exception as e:
+                logger.error(f"AI 处理失败 [{item.get('platform')}]: {e}")
+                return {
+                    **item,
+                    "ai_summary_zh": "",
+                    "ai_summary_en": "",
+                    "category": item.get("category", "other"),
+                    "sentiment": item.get("sentiment", "neutral"),
+                }
+
+    processed = await asyncio.gather(*[_process_one(item) for item in items])
 
     def _save():
         now = datetime.now(timezone.utc).isoformat()
@@ -151,14 +155,14 @@ async def _do_fetch_stocks():
         logger.warning("未获取到任何股票指数数据，跳过保存")
         return
 
-    history_all = []
+    history_tasks = []
     for item in indices:
         sym = item.get("symbol", "")
-        try:
-            h = await fetch_stock_history(sym, 30)
-            history_all.extend(h)
-        except Exception as e:
-            logger.error(f"获取 {sym} 历史数据失败: {e}")
+        history_tasks.append(fetch_stock_history(sym, 30))
+    history_results = await asyncio.gather(*history_tasks)
+    history_all = []
+    for h in history_results:
+        history_all.extend(h)
     logger.info(f"获取到 {len(history_all)} 条历史数据")
 
     analysis = {}

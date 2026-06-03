@@ -11,11 +11,24 @@ export const categories = [
 ] as const
 
 export const platformNames: Record<string, { zh: string; en: string }> = {
-  reddit: { zh: 'Reddit', en: 'Reddit' },
+  daily60s: { zh: '每日60秒', en: '60s News' },
+  baidu: { zh: '百度热搜', en: 'Baidu Hot' },
+  zhihu: { zh: '知乎热榜', en: 'Zhihu Hot' },
+  bilibili: { zh: 'B站热搜', en: 'Bilibili Hot' },
   hackernews: { zh: 'Hacker News', en: 'Hacker News' },
-  weibo: { zh: '微博', en: 'Weibo' },
-  youtube: { zh: 'YouTube', en: 'YouTube' },
-  twitter: { zh: 'Twitter', en: 'Twitter' },
+}
+
+export const stockDisplayNames: Record<string, { zh: string; en: string }> = {
+  '000001.SS': { zh: '上证指数', en: 'Shanghai Composite' },
+  '399001.SZ': { zh: '深证成指', en: 'Shenzhen Component' },
+  '399006.SZ': { zh: '创业板指', en: 'ChiNext' },
+  '^IXIC': { zh: '纳斯达克', en: 'NASDAQ' },
+  '^GSPC': { zh: '标普500', en: 'S&P 500' },
+  '^DJI': { zh: '道琼斯', en: 'Dow Jones' },
+  '^HSI': { zh: '恒生指数', en: 'Hang Seng' },
+  '^N225': { zh: '日经225', en: 'Nikkei 225' },
+  '^FTSE': { zh: '英国富时100', en: 'FTSE 100' },
+  '^GDAXI': { zh: '德国DAX', en: 'DAX' },
 }
 
 const messages: Record<Locale, Record<string, string>> = {
