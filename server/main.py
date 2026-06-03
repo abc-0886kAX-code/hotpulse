@@ -54,6 +54,35 @@ async def health_check():
     return {"status": "ok"}
 
 
+@app.get("/api/diag")
+async def diagnose():
+    """诊断端点：测试各数据源连通性"""
+    import httpx
+    results = {}
+
+    sources = [
+        ("60s", "https://60s.viki.moe/v2/60s"),
+        ("weibo_rss", "https://rsshub.app/weibo/hot"),
+        ("hackernews", "https://hacker-news.firebaseio.com/v0/topstories.json"),
+        ("reddit", "https://www.reddit.com/r/technology/hot.json"),
+        ("yahoo_sh", f"{settings.yahoo_finance_api_url}/000001.SS"),
+    ]
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        for name, url in sources:
+            try:
+                resp = await client.get(url, headers={"User-Agent": "HotPulse/1.0"})
+                results[name] = {"status": resp.status_code, "body_len": len(resp.text)}
+            except Exception as e:
+                results[name] = {"status": "error", "error": str(e)[:100]}
+
+    has_key = bool(settings.anthropic_api_key)
+    results["ai_configured"] = has_key
+    results["supabase_url"] = settings.supabase_url[:30] + "..."
+
+    return results
+
+
 async def _do_fetch_trending():
     items = await fetch_all_trending()
     logger.info(f"爬虫获取到 {len(items)} 条原始话题")
