@@ -2,14 +2,19 @@
 
 **AI 驱动的全球热点聚合平台 — News · Mindset · Wealth**
 
-一个用 AI 帮你理解世界的新闻聚合站。聚合 Reddit、Hacker News、微博、YouTube、Twitter/X 等多平台热点，通过 Claude AI 生成摘要、分类和情感分析，搭配每日励志金句和全球股市行情，一个窗口看懂世界。
+> 一个用 AI 帮你理解世界的新闻聚合站。聚合百度热搜、60s 每日新闻、Hacker News 多平台热点，通过 AI 生成摘要、分类和情感分析，搭配东方财富全球股市 K 线图、行业板块排行和每日励志金句，一个窗口看懂世界。
+
+**在线体验：** https://hotpulse-psi.vercel.app
 
 ## Features
 
-- **多平台热点聚合** — Reddit、Hacker News、微博热搜、YouTube Trending、Twitter/X
-- **AI 智能摘要** — 基于 Claude API，自动生成中英文摘要 + 分类 + 情感分析
-- **每日励志金句** — 500+ 中英双语名言库，每日轮换，支持社交分享
-- **全球股市速报** — 上证、纳斯达克、恒生、标普 500 实时指数
+- **多平台热点聚合** — 百度热搜、每天60秒、Hacker News，国内优先
+- **AI 智能摘要** — 基于 AI 自动生成中英文摘要 + 分类 + 情感分析
+- **专业 K 线图** — ECharts 蜡烛图 + MA5/10/20 均线 + 成交量柱状图
+- **11 个全球指数** — 上证/深证/创业板/沪深300/中证500/科创50/纳斯达克/标普/道琼斯/恒生/日经225
+- **板块排行** — 行业板块 + 概念板块涨幅 Top 20，实时数据
+- **数据可视化** — 分类分布、热度排行、多指数走势对比图
+- **分享功能** — QR 码 + 复制链接 + 下载二维码 + Twitter/微博
 - **中英双语** — 全站 UI + 内容双语支持
 - **响应式设计** — 桌面端 + 移动端完美适配
 
@@ -17,13 +22,14 @@
 
 | Layer | Tech |
 |-------|------|
-| Frontend | Next.js 14+, TypeScript, Tailwind CSS |
+| Frontend | Next.js 16, TypeScript, Tailwind CSS v4 |
+| Charts | ECharts (K线图), recharts (走势对比) |
 | Backend | Python FastAPI |
-| AI | Claude API (Anthropic) |
-| Database | PostgreSQL |
-| Cache | Redis |
-| Task Queue | Celery |
-| Deploy | Vercel (frontend) + Docker (backend) |
+| AI | 智谱 AI (glm-4-flash) |
+| Stock Data | 东方财富 HTTP API (OHLCV K线 + 板块排行) |
+| Database | Supabase (PostgreSQL) |
+| Deploy | Vercel (frontend) + Railway (backend) |
+| Cron | cron-job.org (free) |
 
 ## Quick Start
 
@@ -31,12 +37,11 @@
 
 - Node.js 18+
 - Python 3.11+
-- Docker & Docker Compose
 
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/abc-0886kAx-code/hotpulse.git
+git clone https://github.com/abc-0886kAX-code/hotpulse.git
 cd hotpulse
 
 # Frontend
@@ -53,15 +58,13 @@ cp .env.example .env
 # Edit .env with your API keys
 ```
 
-### 3. Start with Docker (Recommended)
+### 3. Start Dev Server
 
 ```bash
-docker-compose up -d
-```
+# Backend
+cd server && uvicorn main:app --reload --port 8000
 
-### 4. Start Frontend Dev Server
-
-```bash
+# Frontend
 cd web && npm run dev
 ```
 
@@ -73,35 +76,44 @@ Open [http://localhost:3000](http://localhost:3000)
 hotpulse/
 ├── web/                    # Next.js frontend
 │   ├── app/                 # App Router pages
+│   │   ├── page.tsx         # 新闻首页（Hero + 卡片网格）
+│   │   └── stocks/          # 股市页面（K线 + 板块 + AI）
 │   ├── components/          # React components
-│   ├── lib/                 # Utilities & API client
-│   └── messages/            # i18n translations
+│   │   ├── CandlestickChart.tsx  # ECharts K线图
+│   │   ├── MarketIndexCard.tsx   # 指数卡片
+│   │   ├── MarketComparisonChart.tsx  # 多指数对比
+│   │   ├── SectorBoard.tsx       # 板块排行表格
+│   │   ├── ShareModal.tsx         # 分享弹窗（QR码）
+│   │   ├── FeedCard.tsx           # 新闻卡片
+│   │   └── Navigation.tsx        # 导航栏
+│   └── lib/                 # API client + i18n
 ├── server/                  # Python FastAPI backend
-│   ├── routers/             # API route handlers
-│   ├── services/            # Scrapers, AI, stocks
-│   ├── tasks/               # Celery scheduled tasks
-│   ├── models/              # SQLAlchemy models
-│   └── seeds/               # Seed data (quotes)
-├── docker-compose.yml
-├── .env.example
-└── README.md
+│   ├── main.py              # 入口 + cron 端点
+│   ├── routers/             # API 路由
+│   ├── services/
+│   │   ├── stock_fetcher.py     # 东方财富数据（OHLCV + 板块）
+│   │   ├── board_fetcher.py     # 板块排行爬虫
+│   │   ├── ai_processor.py      # AI 摘要/分类/情感
+│   │   └── scrapers/            # 新闻爬虫
+│   └── config.py
+└── docs/
+    └── 产品设计文档.md
 ```
 
-## Roadmap
+## Screenshots
 
-- [x] Product design document
-- [ ] MVP: Multi-platform trending aggregation + AI summary + Daily quote + Stocks widget
-- [ ] Phase 2: User system + Pro subscription + AI trend prediction
-- [ ] Phase 3: Topic graph visualization + AI daily digest + PWA + Affiliate
+- **新闻页**：渐变 Hero 区域 + 排名徽章 + 平台颜色 + 热度进度条
+- **股市页**：滚动行情条 + K线蜡烛图 + 成交量 + 板块排行
+- **分享**：QR码弹窗 + 复制链接 + 社交分享
 
 ## Revenue Model
 
 | Model | Stage |
 |-------|-------|
-| Google AdSense | MVP |
+| Google AdSense | Phase 2 |
 | Pro Subscription ($9.9/mo) | Phase 2 |
 | AI Daily Digest ($4.9/mo) | Phase 3 |
-| Affiliate (Broker, Courses, Books) | Phase 3 |
+| Affiliate (Broker, Courses) | Phase 3 |
 
 ## License
 
