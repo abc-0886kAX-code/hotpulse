@@ -114,7 +114,16 @@ async def _do_fetch_trending():
             return
 
         supabase.table("trending_items").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
-        supabase.table("trending_items").insert(rows).execute()
+        try:
+            supabase.table("trending_items").insert(rows).execute()
+        except Exception as e:
+            logger.error(f"保存失败: {e}")
+            # 尝试逐条保存
+            for row in rows:
+                try:
+                    supabase.table("trending_items").insert(row).execute()
+                except Exception as e2:
+                    logger.error(f"逐条保存失败: {e2}")
         logger.info(f"保存 {len(rows)} 条热门话题到数据库")
 
     await asyncio.to_thread(_save)
@@ -166,11 +175,14 @@ async def _do_ai_enrich():
 
 @app.post("/api/cron/fetch-trending")
 async def cron_fetch_trending():
-    count = await _do_fetch_trending()
-    # AI 处理放后台，不阻塞 cron 返回
-    if count and count > 0:
-        asyncio.create_task(_do_ai_enrich())
-    return {"status": "completed", "count": count}
+    try:
+        count = await _do_fetch_trending()
+        if count and count > 0:
+            asyncio.create_task(_do_ai_enrich())
+        return {"status": "completed", "count": count}
+    except Exception as e:
+        logger.error(f"热点抓取异常: {e}", exc_info=True)
+        return {"status": "error", "message": str(e)[:500]}
 
 
 async def _do_fetch_stocks():
@@ -237,8 +249,12 @@ async def _do_stock_ai_analysis(indices: list[dict], history: list[dict]):
 
 @app.post("/api/cron/fetch-stocks")
 async def cron_fetch_stocks():
-    result = await _do_fetch_stocks()
-    if result and result[0]:
-        indices, history = result
-        asyncio.create_task(_do_stock_ai_analysis(indices, history))
-    return {"status": "completed"}
+    try:
+        result = await _do_fetch_stocks()
+        if result and not isinstance(result, int) and result[0]:
+            indices, history = result
+            asyncio.create_task(_do_stock_ai_analysis(indices, history))
+        return {"status": "completed"}
+    except Exception as e:
+        logger.error(f"股市抓取异常: {e}", exc_info=True)
+        return {"status": "error", "message": str(e)[:500]}
