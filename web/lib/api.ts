@@ -92,6 +92,22 @@ export interface MarketAnalysis {
   generated_at: string
 }
 
+export interface StockRanking {
+  code: string
+  name: string
+  price: number
+  change_pct: number
+  change_amount: number
+  high: number
+  low: number
+  open: number
+  volume: number
+  amount: number
+  turnover: number
+  pe: number
+  pb: number
+}
+
 export async function fetchTrending(params?: { category?: string; region?: string; page?: number; page_size?: number }): Promise<TrendingItem[]> {
   const query = new URLSearchParams()
   if (params?.category) query.set('category', params.category)
@@ -146,6 +162,12 @@ export async function fetchStockHistory(symbol: string, days: number = 30): Prom
   const res = await fetch(`${API_BASE}/api/stocks/history/${encodeURIComponent(symbol)}?days=${days}`)
   const data = await res.json()
   return data.data ?? []
+}
+
+export async function fetchStockRankings(type: string = 'up'): Promise<StockRanking[]> {
+  const res = await fetch(`${API_BASE}/api/stocks/rankings?type=${type}`)
+  const data = await res.json()
+  return data.items ?? []
 }
 
 export async function fetchStockAnalysis(): Promise<MarketAnalysis | null> {

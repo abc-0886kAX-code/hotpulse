@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query
 
 from server.services.supabase_client import supabase
 from server.services.stock_fetcher import fetch_stock_history, fetch_stock_history_ohlcv, SYMBOLS
-from server.services.board_fetcher import fetch_sector_boards
+from server.services.board_fetcher import fetch_sector_boards, fetch_stock_rankings
 
 router = APIRouter(prefix="/api/stocks", tags=["stocks"])
 
@@ -46,6 +46,15 @@ async def get_sector_boards(
 ):
     data = await fetch_sector_boards(board_type, top_n)
     return {"type": board_type, "items": data}
+
+
+@router.get("/rankings")
+async def get_stock_rankings(
+    rank_type: str = Query("up", description="up/down/volume/amount"),
+    top_n: int = Query(15, ge=1, le=30),
+):
+    data = await fetch_stock_rankings(rank_type, top_n)
+    return {"type": rank_type, "items": data}
 
 
 @router.get("/history/{symbol}")
