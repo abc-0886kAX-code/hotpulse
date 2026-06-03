@@ -36,6 +36,13 @@ export interface StockIndex {
   name: string
   price: number
   change_pct: number
+  change_amount?: number
+  open_price?: number
+  high_price?: number
+  low_price?: number
+  volume?: number
+  amount?: number
+  amplitude?: number
   snapshot_time: string
 }
 
@@ -44,7 +51,39 @@ export interface StockHistoryPoint {
   name: string
   price: number
   change_pct?: number
+  open_price?: number
+  high_price?: number
+  low_price?: number
+  volume?: number
+  amount?: number
   snapshot_time: string
+}
+
+export interface StockKLine {
+  symbol: string
+  name: string
+  date: string
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
+  amount?: number
+  change_pct?: number
+  change_amount?: number
+  turnover?: number
+}
+
+export interface SectorBoardItem {
+  code: string
+  name: string
+  change_pct: number
+  change_amount: number
+  turnover: number
+  up_count: number
+  down_count: number
+  volume: number
+  amount: number
 }
 
 export interface MarketAnalysis {
@@ -82,6 +121,18 @@ export async function fetchDailyQuote(): Promise<Quote | null> {
 
 export async function fetchStocks(): Promise<StockIndex[]> {
   const res = await fetch(`${API_BASE}/api/stocks`)
+  const data = await res.json()
+  return data.items ?? []
+}
+
+export async function fetchStockKLine(symbol: string, days: number = 30): Promise<StockKLine[]> {
+  const res = await fetch(`${API_BASE}/api/stocks/kline/${encodeURIComponent(symbol)}?days=${days}`)
+  const data = await res.json()
+  return data.data ?? []
+}
+
+export async function fetchSectorBoards(type: string = 'industry'): Promise<SectorBoardItem[]> {
+  const res = await fetch(`${API_BASE}/api/stocks/sectors?type=${type}`)
   const data = await res.json()
   return data.items ?? []
 }

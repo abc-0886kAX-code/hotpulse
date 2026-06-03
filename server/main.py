@@ -65,7 +65,8 @@ async def diagnose():
         ("60s", "https://60s.viki.moe/v2/60s"),
         ("baidu", "https://top.baidu.com/board?tab=realtime"),
         ("hackernews", "https://hacker-news.firebaseio.com/v0/topstories.json"),
-        ("yahoo_sh", f"{settings.yahoo_finance_api_url}/000001.SS"),
+        ("eastmoney_rt", "http://push2.eastmoney.com/api/qt/stock/get?secid=1.000001&fields=f43,f170"),
+        ("eastmoney_kl", "http://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.000001&klt=101&fqt=1&fields1=f1&fields2=f51,f52,f53,f54,f55,f56&lmt=3&end=29991010"),
     ]
 
     async with httpx.AsyncClient(timeout=10) as client:
@@ -186,7 +187,7 @@ async def cron_fetch_trending():
 
 
 async def _do_fetch_stocks():
-    from server.services.stock_fetcher import fetch_stock_history
+    from server.services.stock_fetcher import fetch_all_stock_history
     indices = await fetch_stock_indices()
     logger.info(f"获取到 {len(indices)} 个股票指数最新快照")
 
@@ -194,14 +195,10 @@ async def _do_fetch_stocks():
         logger.warning("未获取到任何股票指数数据，跳过保存")
         return 0
 
-    history_tasks = []
-    for item in indices:
-        sym = item.get("symbol", "")
-        history_tasks.append(fetch_stock_history(sym, 30))
-    history_results = await asyncio.gather(*history_tasks)
+    history_all_data = await fetch_all_stock_history(30)
     history_all = []
-    for h in history_results:
-        history_all.extend(h)
+    for sym, items in history_all_data.items():
+        history_all.extend(items)
     logger.info(f"获取到 {len(history_all)} 条历史数据")
 
     def _save():
@@ -211,6 +208,13 @@ async def _do_fetch_stocks():
             "name": item.get("name", ""),
             "price": item.get("price", 0.0),
             "change_pct": item.get("change_pct", 0.0),
+            "change_amount": item.get("change_amount", 0.0),
+            "open_price": item.get("open_price", 0.0),
+            "high_price": item.get("high_price", 0.0),
+            "low_price": item.get("low_price", 0.0),
+            "volume": item.get("volume", 0),
+            "amount": item.get("amount", 0),
+            "amplitude": item.get("amplitude", 0.0),
             "snapshot_time": item.get("snapshot_time", datetime.now(timezone.utc).isoformat()),
         } for item in indices]
         if snapshot_rows:

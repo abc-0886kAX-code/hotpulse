@@ -4,11 +4,10 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Query
 
 from server.services.supabase_client import supabase
-from server.services.stock_fetcher import fetch_stock_history
+from server.services.stock_fetcher import fetch_stock_history, fetch_stock_history_ohlcv, SYMBOLS
+from server.services.board_fetcher import fetch_sector_boards
 
 router = APIRouter(prefix="/api/stocks", tags=["stocks"])
-
-SYMBOLS = ["000001.SS", "^IXIC", "^HSI", "^GSPC"]
 
 
 @router.get("")
@@ -33,12 +32,28 @@ async def get_market_analysis():
     return {"item": None}
 
 
+@router.get("/kline/{symbol}")
+async def get_stock_kline(symbol: str, days: int = Query(30, ge=1, le=90)):
+    name = SYMBOLS.get(symbol, symbol)
+    data = await fetch_stock_history_ohlcv(symbol, name, days)
+    return {"symbol": symbol, "data": data}
+
+
+@router.get("/sectors")
+async def get_sector_boards(
+    board_type: str = Query("industry", description="industry 或 concept"),
+    top_n: int = Query(20, ge=1, le=50),
+):
+    data = await fetch_sector_boards(board_type, top_n)
+    return {"type": board_type, "items": data}
+
+
 @router.get("/history/{symbol}")
 async def get_stock_history(symbol: str, days: int = Query(30, ge=1, le=90)):
     def _fetch():
         since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
         return supabase.table("stock_history")\
-            .select("symbol, name, price, change_pct, snapshot_time")\
+            .select("symbol, name, price, change_pct, open_price, high_price, low_price, volume, amount, snapshot_time")\
             .eq("symbol", symbol)\
             .gte("snapshot_time", since)\
             .order("snapshot_time")\
@@ -59,7 +74,7 @@ async def get_all_stock_history(days: int = Query(7, ge=1, le=90)):
         def _fetch(s=symbol):
             since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
             return supabase.table("stock_history")\
-                .select("symbol, name, price, change_pct, snapshot_time")\
+                .select("symbol, name, price, change_pct, open_price, high_price, low_price, volume, amount, snapshot_time")\
                 .eq("symbol", s)\
                 .gte("snapshot_time", since)\
                 .order("snapshot_time")\
