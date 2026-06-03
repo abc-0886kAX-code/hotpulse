@@ -11,56 +11,77 @@ interface MarketIndexCardProps {
   locale: Locale
 }
 
-const COLORS = [
-  '#2563eb', '#ef4444', '#f59e0b', '#8b5cf6',
-  '#06b6d4', '#10b981', '#f97316', '#ec4899',
-  '#6366f1', '#14b8a6',
-]
+const INDEX_COLORS: Record<string, string> = {
+  '000001.SS': '#dc2626',
+  '399001.SZ': '#2563eb',
+  '399006.SZ': '#7c3aed',
+  '^IXIC': '#0891b2',
+  '^GSPC': '#059669',
+  '^DJI': '#d97706',
+  '^HSI': '#e11d48',
+  '^N225': '#4f46e5',
+  '^FTSE': '#0d9488',
+  '^GDAXI': '#ea580c',
+}
+
+const DEFAULT_COLOR = '#6366f1'
 
 export default function MarketIndexCard({ stock, history, locale }: MarketIndexCardProps) {
   const display = stockDisplayNames[stock.symbol] ?? { zh: stock.name, en: stock.name }
   const isPositive = stock.change_pct >= 0
-  const colorIdx = Object.keys(stockDisplayNames).indexOf(stock.symbol)
-  const lineColor = COLORS[Math.max(0, colorIdx) % COLORS.length]
+  const lineColor = INDEX_COLORS[stock.symbol] ?? DEFAULT_COLOR
+
+  const priceChange = stock.price * (stock.change_pct / 100)
+  const formattedChange = Math.abs(priceChange).toFixed(2)
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md">
-      <div className="mb-1 flex items-center justify-between">
-        <h3 className="text-sm font-medium text-slate-500">
-          {locale === 'zh' ? display.zh : display.en}
-        </h3>
-        <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+    <div className="card-hover rounded-2xl border border-slate-200/80 bg-white p-5">
+      <div className="mb-3 flex items-start justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-700">
+            {locale === 'zh' ? display.zh : display.en}
+          </h3>
+          <p className="text-xs text-slate-400">{stock.symbol}</p>
+        </div>
+        <span className={`rounded-lg px-2.5 py-1 text-xs font-bold ${
           isPositive
-            ? 'bg-green-50 text-green-600'
-            : 'bg-red-50 text-red-600'
+            ? 'stock-up-bg stock-up border border-red-200'
+            : 'stock-down-bg stock-down border border-green-200'
         }`}>
           {isPositive ? '+' : ''}{stock.change_pct.toFixed(2)}%
         </span>
       </div>
-      <p className="mb-3 text-3xl font-bold text-slate-900">
-        {stock.price.toFixed(2)}
-      </p>
+
+      <div className="mb-4">
+        <p className={`text-3xl font-bold tracking-tight ${isPositive ? 'stock-up' : 'stock-down'}`}>
+          {stock.price.toFixed(2)}
+        </p>
+        <p className={`text-xs ${isPositive ? 'stock-up' : 'stock-down'}`}>
+          {isPositive ? '+' : '-'}{formattedChange}
+        </p>
+      </div>
+
       {history.length >= 2 ? (
-        <ResponsiveContainer width="100%" height={100}>
+        <ResponsiveContainer width="100%" height={80}>
           <AreaChart data={history}>
             <defs>
               <linearGradient id={`grad-${stock.symbol}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={lineColor} stopOpacity={0.15} />
-                <stop offset="95%" stopColor={lineColor} stopOpacity={0} />
+                <stop offset="5%" stopColor={isPositive ? '#ef4444' : '#22c55e'} stopOpacity={0.2} />
+                <stop offset="95%" stopColor={isPositive ? '#ef4444' : '#22c55e'} stopOpacity={0} />
               </linearGradient>
             </defs>
             <Area
               type="monotone"
               dataKey="price"
-              stroke={lineColor}
+              stroke={isPositive ? '#ef4444' : '#22c55e'}
               strokeWidth={2}
               fill={`url(#grad-${stock.symbol})`}
             />
           </AreaChart>
         </ResponsiveContainer>
       ) : (
-        <div className="flex h-[100px] items-center justify-center text-sm text-slate-300">
-          {locale === 'zh' ? '暂无历史数据' : 'No history'}
+        <div className="flex h-[80px] items-center justify-center rounded-lg bg-slate-50">
+          <p className="text-xs text-slate-300">{locale === 'zh' ? '暂无历史数据' : 'No history'}</p>
         </div>
       )}
     </div>

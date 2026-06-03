@@ -5,7 +5,7 @@ import Navigation from "@/components/Navigation";
 
 export const metadata: Metadata = {
   title: "HotPulse — AI驱动的全球热点聚合",
-  description: "AI-curated trending news from Reddit, Hacker News, Weibo, YouTube, and Twitter/X. Real-time stock indices. Bilingual zh/en.",
+  description: "AI-curated trending news from Baidu, 60s News, Hacker News. Global stock indices with charts. Bilingual zh/en.",
   openGraph: {
     title: "HotPulse — News · Mindset · Wealth",
     description: "AI-driven global trending news aggregation platform",
