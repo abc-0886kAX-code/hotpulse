@@ -1,40 +1,52 @@
+import json
 import logging
+import re
 from datetime import datetime, timezone
 
 import httpx
 
 logger = logging.getLogger(__name__)
 
-BAIDU_HOT_URL = "https://api.vvhan.com/api/hotlist/baiduHot"
+BAIDU_HOT_URL = "https://top.baidu.com/board?tab=realtime"
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
 
 async def fetch_baidu() -> list[dict]:
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(BAIDU_HOT_URL)
+            resp = await client.get(BAIDU_HOT_URL, headers={"User-Agent": UA})
             resp.raise_for_status()
-            data = resp.json()
-            items = data.get("data", [])
-            results = []
-            for idx, item in enumerate(items):
-                title = item.get("title", "")
+            html = resp.text
+
+        items = re.findall(r'\{[^{}]*"word":"[^"]*"[^{}]*\}', html)
+        results = []
+        for idx, item_str in enumerate(items[:30]):
+            try:
+                item = json.loads(item_str)
+                title = item.get("word", "")
                 if not title:
                     continue
+                desc = item.get("desc", "")
+                hot_score = item.get("hotScore", 0)
+                url = item.get("url", "") or item.get("appUrl", "")
                 results.append({
                     "platform": "baidu",
-                    "source_url": item.get("url", ""),
+                    "source_url": url,
                     "title": title,
-                    "original_text": item.get("desc", "") or title,
-                    "content_snippet": item.get("desc", "") or title,
+                    "original_text": desc or title,
+                    "content_snippet": desc or title,
                     "ai_summary_zh": "",
                     "ai_summary_en": "",
                     "category": "domestic",
                     "sentiment": "neutral",
-                    "heat_score": max(1, 100 - idx * 4),
+                    "heat_score": max(1, int(hot_score / 100000)),
                     "published_at": datetime.now(timezone.utc).isoformat(),
                 })
-            logger.info(f"百度热搜获取到 {len(results)} 条")
-            return results
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+        logger.info(f"百度热搜获取到 {len(results)} 条")
+        return results
     except Exception as e:
         logger.error(f"百度热搜获取失败: {e}")
         return []

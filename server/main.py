@@ -63,9 +63,7 @@ async def diagnose():
 
     sources = [
         ("60s", "https://60s.viki.moe/v2/60s"),
-        ("baidu", "https://api.vvhan.com/api/hotlist/baiduHot"),
-        ("zhihu", "https://api.vvhan.com/api/hotlist/zhihuHot"),
-        ("bilibili", "https://api.vvhan.com/api/hotlist/biliHot"),
+        ("baidu", "https://top.baidu.com/board?tab=realtime"),
         ("hackernews", "https://hacker-news.firebaseio.com/v0/topstories.json"),
         ("yahoo_sh", f"{settings.yahoo_finance_api_url}/000001.SS"),
     ]
@@ -73,7 +71,8 @@ async def diagnose():
     async with httpx.AsyncClient(timeout=10) as client:
         for name, url in sources:
             try:
-                resp = await client.get(url, headers={"User-Agent": "HotPulse/1.0"})
+                ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" if name == "baidu" else "HotPulse/1.0"
+                resp = await client.get(url, headers={"User-Agent": ua})
                 results[name] = {"status": resp.status_code, "body_len": len(resp.text)}
             except Exception as e:
                 results[name] = {"status": "error", "error": str(e)[:100]}

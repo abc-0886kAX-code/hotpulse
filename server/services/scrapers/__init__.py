@@ -2,8 +2,6 @@ import logging
 
 from server.services.scrapers.daily60s import fetch_daily60s
 from server.services.scrapers.baidu import fetch_baidu
-from server.services.scrapers.zhihu import fetch_zhihu
-from server.services.scrapers.bilibili import fetch_bilibili
 from server.services.scrapers.hackernews import fetch_hackernews
 
 logger = logging.getLogger(__name__)
@@ -11,8 +9,6 @@ logger = logging.getLogger(__name__)
 DOMESTIC_SCRAPERS = [
     ("daily60s", fetch_daily60s),
     ("baidu", fetch_baidu),
-    ("zhihu", fetch_zhihu),
-    ("bilibili", fetch_bilibili),
 ]
 
 FOREIGN_SCRAPERS = [
