@@ -90,45 +90,27 @@ async def _do_fetch_trending():
 
     if not items:
         logger.warning("所有爬虫返回空结果，跳过保存以保护现有数据")
-        return
+        return len(items)
 
-    sem = asyncio.Semaphore(5)
-
-    async def _process_one(item: dict) -> dict:
-        async with sem:
-            try:
-                return await process_trending_item(item)
-            except Exception as e:
-                logger.error(f"AI 处理失败 [{item.get('platform')}]: {e}")
-                return {
-                    **item,
-                    "ai_summary_zh": "",
-                    "ai_summary_en": "",
-                    "category": item.get("category", "other"),
-                    "sentiment": item.get("sentiment", "neutral"),
-                }
-
-    processed = await asyncio.gather(*[_process_one(item) for item in items])
+    now = datetime.now(timezone.utc).isoformat()
 
     def _save():
-        now = datetime.now(timezone.utc).isoformat()
         rows = [{
             "platform": item.get("platform", ""),
             "source_url": item.get("source_url", ""),
             "title": item.get("title", ""),
             "original_text": item.get("original_text", ""),
             "content_snippet": item.get("content_snippet", item.get("original_text", "")),
-            "ai_summary_zh": item.get("ai_summary_zh", ""),
-            "ai_summary_en": item.get("ai_summary_en", ""),
+            "ai_summary_zh": "",
+            "ai_summary_en": "",
             "category": item.get("category", "other"),
-            "sentiment": item.get("sentiment", "neutral"),
+            "sentiment": "neutral",
             "heat_score": item.get("heat_score", 0),
             "published_at": item.get("published_at", now),
             "fetched_at": now,
-        } for item in processed]
+        } for item in items]
 
         if not rows:
-            logger.warning("处理后无有效数据，跳过保存")
             return
 
         supabase.table("trending_items").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
@@ -136,13 +118,59 @@ async def _do_fetch_trending():
         logger.info(f"保存 {len(rows)} 条热门话题到数据库")
 
     await asyncio.to_thread(_save)
-    logger.info(f"热点抓取完成: 原始 {len(items)} 条, 处理 {len(processed)} 条")
+    logger.info(f"热点抓取完成: {len(items)} 条")
+    return len(items)
+
+
+async def _do_ai_enrich():
+    """后台异步：对未处理的话题进行 AI 分析"""
+    def _fetch_unprocessed():
+        resp = supabase.table("trending_items").select("id").eq("ai_summary_zh", "").execute()
+        return resp.data
+
+    rows = await asyncio.to_thread(_fetch_unprocessed)
+    if not rows:
+        return
+
+    logger.info(f"AI 补充处理: {len(rows)} 条未处理话题")
+    sem = asyncio.Semaphore(5)
+
+    async def _process_one(row_id: str):
+        async with sem:
+            try:
+                def _get():
+                    return supabase.table("trending_items").select("*").eq("id", row_id).execute().data
+                items = await asyncio.to_thread(_get)
+                if not items:
+                    return
+                item = items[0]
+                if item.get("ai_summary_zh"):
+                    return
+
+                result = await process_trending_item(item)
+
+                def _update():
+                    supabase.table("trending_items").update({
+                        "ai_summary_zh": result.get("ai_summary_zh", ""),
+                        "ai_summary_en": result.get("ai_summary_en", ""),
+                        "category": result.get("category", "other"),
+                        "sentiment": result.get("sentiment", "neutral"),
+                    }).eq("id", row_id).execute()
+                await asyncio.to_thread(_update)
+            except Exception as e:
+                logger.error(f"AI 处理失败 [{row_id}]: {e}")
+
+    await asyncio.gather(*[_process_one(r["id"]) for r in rows])
+    logger.info("AI 补充处理完成")
 
 
 @app.post("/api/cron/fetch-trending")
 async def cron_fetch_trending():
-    await _do_fetch_trending()
-    return {"status": "completed", "message": "热点抓取完成"}
+    count = await _do_fetch_trending()
+    # AI 处理放后台，不阻塞 cron 返回
+    if count and count > 0:
+        asyncio.create_task(_do_ai_enrich())
+    return {"status": "completed", "count": count}
 
 
 async def _do_fetch_stocks():
@@ -152,7 +180,7 @@ async def _do_fetch_stocks():
 
     if not indices:
         logger.warning("未获取到任何股票指数数据，跳过保存")
-        return
+        return 0
 
     history_tasks = []
     for item in indices:
@@ -163,13 +191,6 @@ async def _do_fetch_stocks():
     for h in history_results:
         history_all.extend(h)
     logger.info(f"获取到 {len(history_all)} 条历史数据")
-
-    analysis = {}
-    try:
-        analysis = await generate_market_analysis(indices, history_all) or {}
-        logger.info(f"AI 市场分析生成: {'成功' if analysis.get('content_zh') else '跳过'}")
-    except Exception as e:
-        logger.error(f"AI 市场分析生成失败: {e}")
 
     def _save():
         supabase.table("stock_indices").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
@@ -192,19 +213,32 @@ async def _do_fetch_stocks():
                 ).execute()
             logger.info(f"保存 {len(history_all)} 条历史数据")
 
-        if analysis and analysis.get("content_zh"):
-            supabase.table("market_analysis").insert({
-                "content_zh": analysis["content_zh"],
-                "content_en": analysis.get("content_en", ""),
-                "generated_at": datetime.now(timezone.utc).isoformat(),
-            }).execute()
-            logger.info("保存市场分析报告")
-
     await asyncio.to_thread(_save)
     logger.info(f"股市数据抓取完成: {len(indices)} 快照 + {len(history_all)} 历史")
+
+    return indices, history_all
+
+
+async def _do_stock_ai_analysis(indices: list[dict], history: list[dict]):
+    try:
+        analysis = await generate_market_analysis(indices, history) or {}
+        if analysis and analysis.get("content_zh"):
+            def _save():
+                supabase.table("market_analysis").insert({
+                    "content_zh": analysis["content_zh"],
+                    "content_en": analysis.get("content_en", ""),
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                }).execute()
+            await asyncio.to_thread(_save)
+            logger.info("保存市场分析报告")
+    except Exception as e:
+        logger.error(f"AI 市场分析生成失败: {e}")
 
 
 @app.post("/api/cron/fetch-stocks")
 async def cron_fetch_stocks():
-    await _do_fetch_stocks()
-    return {"status": "completed", "message": "股市数据抓取完成"}
+    result = await _do_fetch_stocks()
+    if result and result[0]:
+        indices, history = result
+        asyncio.create_task(_do_stock_ai_analysis(indices, history))
+    return {"status": "completed"}
