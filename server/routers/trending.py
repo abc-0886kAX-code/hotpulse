@@ -7,9 +7,9 @@ from server.services.supabase_client import supabase
 
 router = APIRouter(prefix="/api/trending", tags=["trending"])
 
-DOMESTIC_PLATFORMS = ("daily60s", "baidu")
+DOMESTIC_PLATFORMS = ("daily60s", "weibo", "zhihu", "baidu")
 FOREIGN_PLATFORMS = ("hackernews",)
-PLATFORM_ORDER = {"daily60s": 0, "baidu": 1, "hackernews": 10}
+PLATFORM_ORDER = {"daily60s": 0, "weibo": 1, "zhihu": 2, "baidu": 3, "hackernews": 10}
 
 
 @router.get("")

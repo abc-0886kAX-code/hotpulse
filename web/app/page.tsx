@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/app-context'
 import DailyQuote from '@/components/DailyQuote'
 import FeedCard from '@/components/FeedCard'
-import CategoryFilter from '@/components/CategoryFilter'
 import LoadMore from '@/components/LoadMore'
 import EmptyState from '@/components/EmptyState'
 import ViewTabs from '@/components/ViewTabs'
@@ -31,33 +30,56 @@ function formatDate(locale: Locale): string {
   })
 }
 
+// 统一tab定义：推荐(全部)、国内、国际、各分类、AI分析
+function buildUnifiedTabs(locale: Locale) {
+  return [
+    { key: 'recommend', label: locale === 'zh' ? '推荐' : 'All' },
+    { key: 'domestic', label: t(locale, 'region.domestic') },
+    { key: 'foreign', label: t(locale, 'region.foreign') },
+    { key: 'tech', label: locale === 'zh' ? '科技' : 'Tech' },
+    { key: 'finance', label: locale === 'zh' ? '财经' : 'Finance' },
+    { key: 'entertainment', label: locale === 'zh' ? '娱乐' : 'Entertainment' },
+    { key: 'sports', label: locale === 'zh' ? '体育' : 'Sports' },
+    { key: 'health', label: locale === 'zh' ? '健康' : 'Health' },
+    { key: 'ai', label: locale === 'zh' ? 'AI 分析' : 'AI Analysis' },
+  ]
+}
+
 export default function NewsPage() {
   const { locale, quote } = useApp()
-  const [activeCategory, setActiveCategory] = useState('all')
-  const [viewMode, setViewMode] = useState('all')
-  const [region, setRegion] = useState('domestic')
+  const [activeTab, setActiveTab] = useState('recommend')
   const [items, setItems] = useState<TrendingItem[]>([])
   const [stats, setStats] = useState<TrendingStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [page, setPage] = useState(1)
 
-  const loadData = useCallback(async (cat: string, rg: string, pg: number, append: boolean) => {
-    try {
-      const params: { category?: string; region?: string; page: number; page_size: number } = { page: pg, page_size: 20 }
-      if (cat !== 'all') params.category = cat
-      if (rg !== 'all') params.region = rg
+  // 根据当前tab计算API参数
+  const apiParams = useMemo(() => {
+    if (activeTab === 'ai') return null
+    if (activeTab === 'domestic') return { region: 'domestic' }
+    if (activeTab === 'foreign') return { region: 'foreign' }
+    if (activeTab === 'recommend') return {}
+    // 科技、财经、娱乐、体育、健康 → 按分类过滤
+    return { category: activeTab }
+  }, [activeTab])
 
-      const data = await fetchTrending(params).catch(() => null)
+  const loadData = useCallback(async (tab: string, pg: number, append: boolean) => {
+    if (tab === 'ai') {
+      setLoading(false)
+      return
+    }
+    try {
+      const params: Record<string, string | number> = { page: pg, page_size: 20 }
+      if (tab === 'domestic') params.region = 'domestic'
+      else if (tab === 'foreign') params.region = 'foreign'
+      else if (tab !== 'recommend') params.category = tab
+
+      const data = await fetchTrending(params as Parameters<typeof fetchTrending>[0]).catch(() => null)
       if (data && data.length > 0) {
         setItems(append ? (prev) => [...prev, ...data] : data)
       } else if (pg === 1) {
         setItems([])
-      }
-
-      if (pg === 1 && viewMode === 'ai') {
-        const s = await fetchTrendingStats().catch(() => null)
-        setStats(s)
       }
     } catch {
       if (pg === 1) setItems([])
@@ -65,37 +87,28 @@ export default function NewsPage() {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [viewMode])
+  }, [])
 
   useEffect(() => {
     setLoading(true)
     setPage(1)
-    loadData(activeCategory, region, 1, false)
-  }, [activeCategory, region, locale, viewMode, loadData])
+    loadData(activeTab, 1, false)
+  }, [activeTab, locale, loadData])
 
   useEffect(() => {
-    if (viewMode === 'ai' && items.length > 0) {
+    if (activeTab === 'ai') {
       fetchTrendingStats().then(setStats).catch(() => setStats(null))
     }
-  }, [viewMode, items.length])
+  }, [activeTab])
 
   const handleLoadMore = () => {
     setLoadingMore(true)
     const nextPage = page + 1
     setPage(nextPage)
-    loadData(activeCategory, region, nextPage, true)
+    loadData(activeTab, nextPage, true)
   }
 
-  const newsTabs = [
-    { key: 'all', label: locale === 'zh' ? '全部新闻' : 'All News' },
-    { key: 'ai', label: locale === 'zh' ? 'AI 分析' : 'AI Analysis' },
-  ]
-
-  const regionTabs = [
-    { key: 'domestic', label: t(locale, 'region.domestic') },
-    { key: 'foreign', label: t(locale, 'region.foreign') },
-    { key: 'all', label: t(locale, 'region.all') },
-  ]
+  const tabs = useMemo(() => buildUnifiedTabs(locale), [locale])
 
   const totalItems = items.length
 
@@ -131,21 +144,9 @@ export default function NewsPage() {
         <DailyQuote quote={quote} locale={locale} />
       </div>
 
-      {/* 筛选栏 */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <ViewTabs tabs={newsTabs} active={viewMode} onChange={setViewMode} />
-          {viewMode === 'all' && (
-            <ViewTabs tabs={regionTabs} active={region} onChange={setRegion} />
-          )}
-        </div>
-        {viewMode === 'all' && (
-          <CategoryFilter
-            activeCategory={activeCategory}
-            onCategoryChange={setActiveCategory}
-            locale={locale}
-          />
-        )}
+      {/* 统一tab栏 */}
+      <div className="mb-6">
+        <ViewTabs tabs={tabs} active={activeTab} onChange={setActiveTab} />
       </div>
 
       {loading ? (
@@ -165,7 +166,7 @@ export default function NewsPage() {
         </div>
       ) : (
         <>
-          {viewMode === 'ai' && stats && (
+          {activeTab === 'ai' && stats && (
             <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="rounded-2xl border border-slate-200/80 bg-white p-6">
                 <h3 className="mb-4 text-sm font-semibold text-slate-700">
@@ -225,20 +226,24 @@ export default function NewsPage() {
             </div>
           )}
 
-          {items.length > 0 ? (
+          {activeTab === 'ai' && (!stats || (stats.topHeat && stats.topHeat.length === 0)) && (
+            <EmptyState locale={locale} />
+          )}
+
+          {activeTab !== 'ai' && items.length > 0 ? (
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {items.map((item, idx) => (
                   <div key={item.id} className="animate-fade-in-up" style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}>
-                    <FeedCard item={item} locale={locale} aiMode={viewMode === 'ai'} rank={idx + 1} />
+                    <FeedCard item={item} locale={locale} aiMode={false} rank={idx + 1} />
                   </div>
                 ))}
               </div>
               <LoadMore onClick={handleLoadMore} loading={loadingMore} locale={locale} />
             </>
-          ) : (
+          ) : activeTab !== 'ai' && !loading ? (
             <EmptyState locale={locale} />
-          )}
+          ) : null}
         </>
       )}
     </div>

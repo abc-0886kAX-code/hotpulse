@@ -15,6 +15,8 @@ export default function Navigation() {
   const tabs = [
     { href: '/', label: t(locale, 'nav.news') },
     { href: '/stocks', label: t(locale, 'nav.stocks') },
+    { href: '/report', label: t(locale, 'report.stock') },
+    { href: '/report/news', label: t(locale, 'report.news') },
   ]
 
   return (

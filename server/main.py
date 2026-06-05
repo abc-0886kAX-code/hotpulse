@@ -63,6 +63,8 @@ async def diagnose():
 
     sources = [
         ("60s", "https://60s.viki.moe/v2/60s"),
+        ("weibo", "https://weibo.com/ajax/side/hotSearch"),
+        ("zhihu", "https://www.zhihu.com/hot"),
         ("baidu", "https://top.baidu.com/board?tab=realtime"),
         ("hackernews", "https://hacker-news.firebaseio.com/v0/topstories.json"),
         ("eastmoney_rt", "http://push2.eastmoney.com/api/qt/stock/get?secid=1.000001&fields=f43,f170"),

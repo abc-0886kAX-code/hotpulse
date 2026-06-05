@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import dynamic from 'next/dynamic'
-import Link from 'next/link'
 import { useApp } from '@/lib/app-context'
 import { t } from '@/lib/i18n'
 import { stockDisplayNames } from '@/lib/i18n'
@@ -159,22 +158,12 @@ export default function StocksPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div className="mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{t(locale, 'stock.overview')}</h1>
           <p className="mt-1 text-sm text-slate-400">
             {locale === 'zh' ? '覆盖全球主要指数，实时追踪市场动态' : 'Tracking major global indices in real-time'}
           </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/report" className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-all hover:border-blue-200 hover:text-blue-600 hover:shadow-sm">
-            <span>📊</span>
-            {t(locale, 'report.stock')}
-          </Link>
-          <Link href="/report/news" className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition-all hover:border-blue-200 hover:text-blue-600 hover:shadow-sm">
-            <span>📰</span>
-            {t(locale, 'report.news')}
-          </Link>
         </div>
       </div>
 

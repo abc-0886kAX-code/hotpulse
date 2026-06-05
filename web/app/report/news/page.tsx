@@ -180,7 +180,9 @@ export default function NewsReportPage() {
 
     const colors: Record<string, string> = {
       daily60s: '#3b82f6',
-      baidu: '#ef4444',
+      weibo: '#ef4444',
+      zhihu: '#3b82f6',
+      baidu: '#6366f1',
       hackernews: '#f97316',
     }
 
