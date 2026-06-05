@@ -14,7 +14,7 @@ export const categories = [
 export const platformNames: Record<string, { zh: string; en: string }> = {
   daily60s: { zh: '每日60秒', en: '60s News' },
   weibo: { zh: '微博热搜', en: 'Weibo Hot' },
-  zhihu: { zh: '知乎热榜', en: 'Zhihu Hot' },
+  toutiao: { zh: '头条热榜', en: 'Toutiao Hot' },
   baidu: { zh: '百度热搜', en: 'Baidu Hot' },
   hackernews: { zh: 'Hacker News', en: 'Hacker News' },
 }

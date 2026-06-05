@@ -181,9 +181,9 @@ export default function NewsReportPage() {
     const colors: Record<string, string> = {
       daily60s: '#3b82f6',
       weibo: '#ef4444',
-      zhihu: '#3b82f6',
+      toutiao: '#f97316',
       baidu: '#6366f1',
-      hackernews: '#f97316',
+      hackernews: '#10b981',
     }
 
     for (const [plat, items] of grouped) {
